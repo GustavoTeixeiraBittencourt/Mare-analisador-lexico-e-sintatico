@@ -1,0 +1,744 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil,shorthands=off]{babel}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{url}
+\usepackage{tikz}
+\usetikzlibrary{automata,positioning,arrows.meta}
+
+\definecolor{cinza}{gray}{0.45}
+\definecolor{azul}{RGB}{20,70,140}
+
+\lstdefinelanguage{Mare}{
+  morekeywords={principal,funcao,seja,fixo,se,senao,enquanto,para,de,ate,passo,
+    repita,retorne,mostre,leia,inteiro,real,logico,texto,verdadeiro,falso,e,ou,nao},
+  sensitive=true,
+  morecomment=[l]{\#},
+  morecomment=[s]{\#*}{*\#},
+  morestring=[b]"
+}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{azul}\bfseries,
+  commentstyle=\color{cinza}\itshape,
+  stringstyle=\color{teal},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{black!30},
+  numbers=left,
+  numberstyle=\tiny\color{cinza},
+  xleftmargin=1.6em,
+  framexleftmargin=1.4em,
+  aboveskip=4pt,
+  belowskip=4pt,
+  literate={á}{{\'a}}1 {ã}{{\~a}}1 {ç}{{\c{c}}}1 {é}{{\'e}}1 {ê}{{\^e}}1
+           {í}{{\'i}}1 {ó}{{\'o}}1 {õ}{{\~o}}1 {ú}{{\'u}}1
+}
+\lstdefinestyle{ebnf}{
+  language={}, numbers=none, xleftmargin=0.3em, framexleftmargin=0.2em,
+  basicstyle=\ttfamily\scriptsize
+}
+
+\renewcommand{\lstlistingname}{Listagem}
+
+\begin{document}
+
+\title{Maré: Especificação e Implementação dos Analisadores Léxico e Sintático de uma Linguagem Imperativa Didática em Português}
+
+\author{
+\IEEEauthorblockN{Gustavo Teixeira Bittencourt de Oliveira, Christophe Abelem Pinho,\\
+Edgar Klewert Da Costa Araujo, Elissandra Bernadett Abdon Nascimento, Adler Augustus de Castro Mota}
+\IEEEauthorblockA{Curso de Engenharia da Computação -- Turma EC8MA\\
+Centro Universitário do Estado do Pará (CESUPA)\\
+Belém, PA, Brasil}
+}
+
+\maketitle
+
+\begin{abstract}
+Este artigo descreve a primeira etapa da construção de um compilador para a
+Maré, uma linguagem de programação imperativa, estaticamente tipada e com
+palavras-chave em português, projetada pela equipe. São apresentados a
+especificação léxica da linguagem, com suas classes de lexemas, tokens e
+expressões regulares, e uma gramática livre de contexto em notação EBNF que
+cobre declarações de variáveis e constantes, o bloco principal, condicionais
+encadeados, três formas de laço, funções com parâmetros tipados e expressões
+aritméticas, relacionais e lógicas. O analisador léxico foi implementado em
+Python, sem geradores automáticos, a partir de uma expressão regular mestre
+com grupos nomeados. O analisador sintático é descendente recursivo, constrói
+uma árvore sintática abstrata e recupera-se de erros em modo pânico. Um
+programa de demonstração com 60 linhas é convertido em uma cadeia de 288 tokens
+e aceito pelo analisador sintático, e 28 testes automatizados validam
+precedência, associatividade e o diagnóstico de erros.
+\end{abstract}
+
+\begin{IEEEkeywords}
+compiladores, análise léxica, análise sintática, expressões regulares,
+gramática livre de contexto, parser descendente recursivo.
+\end{IEEEkeywords}
+
+% ======================================================================
+\section{Introdução}
+
+Um compilador traduz um programa escrito em uma linguagem-fonte para uma
+representação equivalente em outra linguagem, e o faz em fases bem
+delimitadas~\cite{aho2006}. As duas primeiras formam a \emph{vanguarda}
+(\textit{front end}) do processo: a análise léxica agrupa os caracteres do
+código em unidades com significado, os \emph{tokens}, e a análise sintática
+verifica se a sequência desses tokens respeita a estrutura da linguagem,
+produzindo uma árvore que servirá às fases seguintes~\cite{cooper2011}.
+
+O objetivo deste trabalho é construir essas duas fases para uma linguagem
+nova, a \textbf{Maré}, que servirá de protótipo ao longo do semestre. A
+escolha por uma linguagem própria, em vez de um subconjunto de uma linguagem
+existente, permitiu controlar cada decisão de projeto e justificá-la do ponto
+de vista da teoria de linguagens formais. O nome faz referência ao fenômeno
+das marés, característico da região amazônica, e também sugere o fluxo de
+tokens que ``sobe'' do código-fonte até a árvore sintática.
+
+As contribuições deste artigo são: (i) a especificação léxica e sintática da
+Maré; (ii) um analisador léxico baseado em expressões regulares com detecção
+de erros; (iii) um analisador sintático descendente recursivo com construção
+de árvore sintática abstrata (AST) e recuperação de erros; e (iv) a validação
+da implementação por meio de programas de exemplo e testes automatizados.
+
+O restante do texto está organizado da seguinte forma: a Seção~\ref{sec:fund}
+revisa os conceitos utilizados; a Seção~\ref{sec:lingua} apresenta a
+linguagem; as Seções~\ref{sec:lex} e~\ref{sec:sint} detalham os analisadores;
+a Seção~\ref{sec:result} discute os resultados; e a Seção~\ref{sec:concl}
+conclui o trabalho.
+
+% ======================================================================
+\section{Fundamentação Teórica}\label{sec:fund}
+
+\subsection{Lexemas, tokens e padrões}
+Um \emph{lexema} é uma sequência concreta de caracteres do código-fonte, como
+\texttt{nota1} ou \texttt{>=}. Um \emph{token} é o par formado por um nome
+abstrato, que indica a classe do lexema, e um atributo opcional, geralmente o
+próprio lexema~\cite{aho2006}. O \emph{padrão} descreve o conjunto de lexemas
+que pertencem a uma classe e é normalmente expresso por uma expressão regular.
+As linguagens regulares são reconhecidas por autômatos finitos, o que torna a
+análise léxica executável em tempo linear no tamanho da
+entrada~\cite{hopcroft2006}.
+
+Quando mais de um padrão casa com o mesmo ponto da entrada, duas regras
+resolvem a ambiguidade: a do \emph{casamento mais longo}, que prefere o maior
+lexema possível (\texttt{<=} em vez de \texttt{<}), e a da \emph{prioridade},
+que, entre casamentos do mesmo tamanho, escolhe o padrão listado
+primeiro~\cite{cooper2011}.
+
+\subsection{Gramáticas livres de contexto}
+A estrutura sintática de uma linguagem de programação é descrita por uma
+gramática livre de contexto (GLC) $G = (N, \Sigma, P, S)$, em que $N$ é o
+conjunto de não-terminais, $\Sigma$ o de terminais (aqui, os tokens), $P$ o de
+produções e $S$ o símbolo inicial~\cite{hopcroft2006}. A notação EBNF
+estende a BNF com operadores de repetição \texttt{\{~\}} e de opcionalidade
+\texttt{[~]}, o que torna a gramática mais compacta~\cite{wirth1977}.
+
+\subsection{Análise descendente recursiva}
+Um analisador descendente recursivo associa a cada não-terminal uma função
+que reconhece as suas produções, consumindo tokens da esquerda para a
+direita~\cite{louden2004}. Para que a escolha da produção seja
+determinística com $k$ tokens de antecipação (\textit{lookahead}), a
+gramática deve ser LL($k$): sem recursão à esquerda e com conjuntos
+\textsc{First} disjuntos entre alternativas~\cite{grune2008}. Essa estratégia
+dispensa ferramentas geradoras, produz código legível e facilita mensagens de
+erro específicas, razões pelas quais é adotada por compiladores de produção e
+recomendada em contextos didáticos~\cite{nystrom2021}.
+
+% ======================================================================
+\section{A Linguagem Maré}\label{sec:lingua}
+
+A Maré é imperativa, estruturada em blocos delimitados por chaves e
+estaticamente tipada, com quatro tipos primitivos: \texttt{inteiro},
+\texttt{real}, \texttt{logico} e \texttt{texto}. Três decisões de projeto
+guiaram a sintaxe:
+
+\begin{itemize}
+\item \textbf{Tipo à direita do nome}: \texttt{seja x: inteiro = 1;}. A
+palavra inicial (\texttt{seja} ou \texttt{fixo}) identifica a declaração com
+um único token de antecipação.
+\item \textbf{Operadores lógicos por extenso} (\texttt{e}, \texttt{ou},
+\texttt{nao}), o que aproxima as condições da leitura em português.
+\item \textbf{Blocos sempre entre chaves}, inclusive em comandos de uma só
+linha, o que elimina a ambiguidade do \textit{senão pendurado}.
+\end{itemize}
+
+A Listagem~\ref{lst:exemplo} mostra um trecho do programa de demonstração.
+Ele contém os recursos mínimos exigidos (variáveis, bloco
+\texttt{principal}, condicionais, equações matemáticas e regras lógicas) e
+também funções e laços.
+
+\begin{lstlisting}[language=Mare,caption={Trecho do programa de demonstração \texttt{completo.mare}.},label=lst:exemplo]
+fixo MEDIA_MINIMA: real = 7.0;
+
+funcao media(p1: real, p2: real,
+             peso: inteiro) -> real {
+    retorne (p1 + p2 * peso) / (1 + peso);
+}
+
+principal {
+    seja nota1: real = 6.5;
+    seja nota2: real;
+    seja faltas: inteiro = 3;
+    leia(nota2);
+    seja m: real = media(nota1, nota2, 2);
+
+    # regra logica composta
+    se (m >= MEDIA_MINIMA e faltas <= 10
+        ou nota2 == 10.0) {
+        mostre("aprovada com media ", m);
+    } senao se (m >= 5.0 e nao (faltas > 10)) {
+        mostre("em recuperacao");
+    } senao {
+        mostre("reprovada");
+    }
+    para k de 1 ate 10 passo 2 {
+        mostre(k, " ao quadrado = ", k ^ 2);
+    }
+    repita {
+        faltas = faltas - 1;
+    } ate (faltas <= 0);
+}
+\end{lstlisting}
+
+A Tabela~\ref{tab:recursos} resume os comandos disponíveis.
+
+\begin{table}[!t]
+\caption{Recursos da linguagem Maré}\label{tab:recursos}
+\centering\footnotesize
+\begin{tabular}{@{}l>{\ttfamily}l@{}}
+\toprule
+\textbf{Recurso} & \normalfont\textbf{Sintaxe} \\
+\midrule
+Variável        & seja x: tipo [= expr]; \\
+Constante       & fixo X: tipo = expr; \\
+Bloco principal & principal \{ ... \} \\
+Condicional     & se (c) \{\} [senao \{\}] \\ Senão-se & senao se (c) \{\} \\
+Laço pré-teste  & enquanto (c) \{ ... \} \\
+Laço contado    & para i de a ate b [passo p] \{\} \\
+Laço pós-teste  & repita \{ ... \} ate (c); \\
+Função          & funcao f(a: tipo) [-> tipo] \{\} \\
+Retorno         & retorne [expr]; \\
+Entrada/Saída   & leia(x); \quad mostre(e1, e2); \\
+Comentários     & \# linha \quad \#* bloco *\# \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ======================================================================
+\section{Analisador Léxico}\label{sec:lex}
+
+\subsection{Classes de lexemas e tokens}
+A Maré possui 50 tipos de token, organizados em dez classes de lexemas
+(Tabela~\ref{tab:tokens}). Os operadores lógicos, embora sejam palavras,
+formam uma classe própria, porque na gramática ocupam a posição de operadores
+e não de comandos.
+
+\begin{table}[!t]
+\caption{Classes de lexemas e tokens da Maré}\label{tab:tokens}
+\centering\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{1.75cm}>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{2.75cm}@{}}
+\toprule
+\textbf{Classe} & \textbf{Tokens} & \textbf{Lexemas} \\
+\midrule
+Palavra reservada & PRINCIPAL, FUNCAO, SEJA, FIXO, SE, SENAO, ENQUANTO,
+  PARA, DE, ATE, PASSO, REPITA, RETORNE, MOSTRE, LEIA
+  & \texttt{principal funcao seja fixo se senao enquanto para de ate passo
+  repita retorne mostre leia} \\
+Tipo primitivo & T\_INTEIRO, T\_REAL, T\_LOGICO, T\_TEXTO
+  & \texttt{inteiro real logico texto} \\
+Identificador & ID & \texttt{nota1}, \texttt{eh\_par} \\
+Literal & NUM\_INT, NUM\_REAL, TEXTO, VERDADEIRO, FALSO
+  & \texttt{42}, \texttt{7.0}, \texttt{"Ana"}, \texttt{verdadeiro} \\
+Op.\ aritmético & MAIS, MENOS, MULT, DIV, MOD, POT & \texttt{+ - * / \% \^{}} \\
+Op.\ relacional & IGUAL, DIFERENTE, MENOR, MENOR\_IGUAL, MAIOR, MAIOR\_IGUAL
+  & \texttt{== != < <= > >=} \\
+Op.\ lógico & E, OU, NAO & \texttt{e ou nao} \\
+Atribuição & ATRIB & \texttt{=} \\
+Delimitador & ABRE\_PAR, FECHA\_PAR, ABRE\_CHAVE, FECHA\_CHAVE,
+  PONTO\_VIRGULA, VIRGULA, DOIS\_PONTOS, SETA
+  & \texttt{( ) \{ \} ; , : ->} \\
+Fim & EOF & (fim do arquivo) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Expressões regulares}
+Cada classe é definida por uma expressão regular (Tabela~\ref{tab:regex}).
+Espaços e comentários são reconhecidos e descartados. Algumas regras não
+produzem tokens: existem para capturar entradas inválidas e emitir
+mensagens de erro precisas.
+
+\begin{table}[!t]
+\caption{Expressões regulares do scanner, em ordem de prioridade}\label{tab:regex}
+\centering\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}r l >{\ttfamily}l@{}}
+\toprule
+\textbf{\#} & \textbf{Regra} & \normalfont\textbf{Expressão regular} \\
+\midrule
+1  & ESPACO            & [ \textbackslash t\textbackslash r]+ \\
+2  & NOVA\_LINHA       & \textbackslash n \\
+3  & COMENTARIO\_BLOCO & \textbackslash\#\textbackslash*[\textbackslash s\textbackslash S]*?\textbackslash*\textbackslash\# \\
+4  & COMENTARIO\_ABERTO$^\dagger$ & \textbackslash\#\textbackslash* \\
+5  & COMENTARIO\_LINHA & \textbackslash\#[\^{}\textbackslash n]* \\
+6  & NUM\_INVALIDO$^\dagger$ & \textbackslash d+(?:\textbackslash.\textbackslash d+)?[A-Za-z\_]\textbackslash w* \\
+   &                   & |\textbackslash d+\textbackslash.(?!\textbackslash d) \\
+7  & NUM\_REAL         & \textbackslash d+\textbackslash.\textbackslash d+ \\
+8  & NUM\_INT          & \textbackslash d+ \\
+9  & TEXTO             & "(?:\textbackslash\textbackslash.|[\^{}"\textbackslash\textbackslash\textbackslash n])*" \\
+10 & TEXTO\_ABERTO$^\dagger$ & "(?:\textbackslash\textbackslash.|[\^{}"\textbackslash\textbackslash\textbackslash n])* \\
+11 & ID                & [A-Za-z\_][A-Za-z0-9\_]* \\
+12 & SIMBOLO           & ->|==|!=|<=|>=|[<>=+\textbackslash-*/\%\^{}()\{\};,:] \\
+13 & DESCONHECIDO$^\dagger$ & . \\
+\bottomrule
+\multicolumn{3}{@{}l}{$^\dagger$ Regra de erro: não gera token, registra um erro léxico.}
+\end{tabular}
+\end{table}
+
+\subsection{Justificativa da expressão regular dos identificadores}
+O identificador é definido por
+\[
+\mathit{ID} = (\mathit{letra} \mid \_)\,(\mathit{letra} \mid \mathit{digito} \mid \_)^{*}
+\]
+com $\mathit{letra} = [\texttt{A-Za-z}]$ e $\mathit{digito} = [\texttt{0-9}]$,
+o que corresponde à regex \texttt{[A-Za-z\_][A-Za-z0-9\_]*}. Cada parte da
+definição tem um motivo:
+
+\begin{itemize}
+\item \textbf{Primeiro caractere sem dígito.} Um lexema que começa por dígito
+é sempre número. Com isso, a primeira posição decide entre as classes
+\texttt{NUM} e \texttt{ID}, e \texttt{12abc} pode ser tratado como erro
+sem ambiguidade (regra 6).
+\item \textbf{Sublinhado permitido.} Permite nomes compostos legíveis
+(\texttt{eh\_par}) e a convenção de constantes em maiúsculas
+(\texttt{MEDIA\_MINIMA}).
+\item \textbf{Somente ASCII.} Letras acentuadas ficam fora do alfabeto de
+identificadores, e \texttt{preço} gera erro com a dica ``identificadores não
+aceitam acentos''. Assim o conjunto de caracteres válidos é o mesmo em
+qualquer sistema operacional ou codificação do arquivo, e as palavras
+reservadas não têm grafias duplicadas (\texttt{senao} e \texttt{senão}).
+\item \textbf{Fecho de Kleene no restante.} Não há limite de tamanho, e o
+casamento mais longo garante que \texttt{nota12} seja um único token.
+\end{itemize}
+
+A Fig.~\ref{fig:afd} mostra o autômato finito determinístico equivalente. O
+estado $q_1$ é de aceitação, e qualquer caractere fora de
+$[\texttt{A-Za-z0-9\_}]$ encerra o lexema.
+
+\begin{figure}[!t]
+\centering
+\begin{tikzpicture}[>=Stealth, node distance=2.6cm, auto, every state/.style={minimum size=0.8cm}, font=\footnotesize]
+\node[state, initial, initial text={}] (q0) {$q_0$};
+\node[state, accepting, right=of q0] (q1) {$q_1$};
+\path[->] (q0) edge node {\texttt{[A-Za-z\_]}} (q1)
+          (q1) edge[loop right] node {\texttt{[A-Za-z0-9\_]}} (q1);
+\end{tikzpicture}
+\caption{AFD que reconhece a classe \texttt{ID}.}
+\label{fig:afd}
+\end{figure}
+
+\subsection{Justificativa da tabela de palavras reservadas}
+As 24 palavras reservadas, os tipos e os operadores lógicos também pertencem
+à linguagem de \texttt{ID}. Em vez de escrever uma expressão regular para
+cada uma, o scanner reconhece o lexema como identificador e depois consulta
+uma \emph{tabela de palavras reservadas}, implementada como dicionário. Se o
+lexema estiver na tabela, o token é reclassificado. Essa escolha tem três
+vantagens: (i) o casamento mais longo é preservado sem regras extras, e por
+isso \texttt{sejam} é identificador enquanto \texttt{seja} é reservada, um
+erro comum quando se escreve \texttt{seja} como regex antes de \texttt{ID};
+(ii) a consulta custa $O(1)$ em média; e (iii) incluir uma palavra nova na
+linguagem exige apenas uma linha na tabela. Os símbolos seguem a mesma ideia:
+uma regex única os reconhece, e a tabela \texttt{SIMBOLOS} associa cada
+lexema ao seu token.
+
+\subsection{Implementação}
+O scanner foi escrito em Python sem bibliotecas de terceiros. As 13 regras da
+Tabela~\ref{tab:regex} são concatenadas em uma única \emph{regex mestre}, na
+forma \texttt{(?P<ESPACO>...)|(?P<NOVA\_LINHA>...)|...}, e aplicada com
+\texttt{re.finditer} sobre todo o código~\cite{pyre}. Como o motor de expressões regulares
+do Python testa as alternativas da esquerda para a direita, a ordem das regras
+implementa a regra da prioridade. As ambiguidades da linguagem são resolvidas
+por essa ordem:
+
+\begin{itemize}
+\item \texttt{NUM\_INVALIDO} antes de \texttt{NUM\_INT}: \texttt{12abc} é
+reportado como erro, e não aceito como \texttt{12} seguido de \texttt{abc};
+\item \texttt{NUM\_REAL} antes de \texttt{NUM\_INT}: \texttt{3.14} é um só token;
+\item operadores de dois caracteres antes dos de um dentro de \texttt{SIMBOLO}:
+\texttt{<=} não se divide em \texttt{<} e \texttt{=};
+\item comentário de bloco (\texttt{\#*}) antes do de linha (\texttt{\#}).
+\end{itemize}
+
+O nome do grupo que casou (\texttt{match.lastgroup}) indica a classe do
+lexema. Cada token guarda tipo, lexema, linha e coluna. A linha é
+incrementada a cada \texttt{NOVA\_LINHA} e também pelas quebras dentro de
+comentários de bloco. Os erros léxicos são acumulados em uma lista, e a
+varredura continua, de modo que todos são apresentados ao usuário em uma
+única execução.
+
+\subsection{Cadeia de tokens}
+A Listagem~\ref{lst:mini} mostra um programa mínimo e a
+Listagem~\ref{lst:cadeia} a cadeia de tokens produzida para ele, agrupada por
+linha. Tokens com atributo (\texttt{ID}, números e textos) exibem o lexema.
+
+\begin{lstlisting}[language=Mare,caption={Programa \texttt{mini.mare}.},label=lst:mini]
+principal {
+    seja x: inteiro = 2 + 3 * 4;
+    se (x > 10 e nao falso) {
+        mostre(x);
+    }
+}
+\end{lstlisting}
+
+\begin{lstlisting}[style=ebnf,caption={Cadeia de tokens gerada para \texttt{mini.mare}.},label=lst:cadeia]
+1 <PRINCIPAL> <ABRE_CHAVE>
+2 <SEJA> <ID,x> <DOIS_PONTOS> <T_INTEIRO> <ATRIB>
+  <NUM_INT,2> <MAIS> <NUM_INT,3> <MULT> <NUM_INT,4>
+  <PONTO_VIRGULA>
+3 <SE> <ABRE_PAR> <ID,x> <MAIOR> <NUM_INT,10> <E>
+  <NAO> <FALSO> <FECHA_PAR> <ABRE_CHAVE>
+4 <MOSTRE> <ABRE_PAR> <ID,x> <FECHA_PAR> <PONTO_VIRGULA>
+5 <FECHA_CHAVE>
+6 <FECHA_CHAVE>
+7 <EOF>
+\end{lstlisting}
+
+Além da cadeia, a ferramenta imprime a \emph{tabela de lexemas e tokens}, que
+lista cada lexema distinto com seu token, sua classe e o número de
+ocorrências. Para o programa de demonstração completo (60 linhas), foram
+reconhecidos 288 tokens: 111 delimitadores, 52 identificadores, 34 literais,
+33 palavras reservadas, 16 operadores aritméticos, 15 tipos, 11 atribuições,
+9 operadores relacionais, 6 operadores lógicos e o EOF.
+
+% ======================================================================
+\section{Analisador Sintático}\label{sec:sint}
+
+\subsection{Gramática}
+A Listagem~\ref{lst:ebnf} apresenta a gramática da Maré em EBNF. Os terminais
+aparecem entre aspas ou em maiúsculas (tokens produzidos pelo scanner), e o
+símbolo inicial é \texttt{programa}. As regras se dividem em três grupos:
+estrutura (programa, funções e blocos), comandos e expressões.
+
+\begin{lstlisting}[style=ebnf,caption={Gramática livre de contexto da Maré (EBNF).},label=lst:ebnf]
+programa   = {funcao | declaracao} "principal" bloco EOF
+funcao     = "funcao" ID "(" [parametros] ")"
+             ["->" tipo] bloco
+parametros = parametro {"," parametro}
+parametro  = ID ":" tipo
+tipo       = "inteiro" | "real" | "logico" | "texto"
+bloco      = "{" {comando} "}"
+
+comando    = declaracao | atribuicao | chamada ";"
+           | se | enquanto | para | repita
+           | retorne | mostre | leia
+declaracao = "seja" ID ":" tipo ["=" expr] ";"
+           | "fixo" ID ":" tipo "=" expr ";"
+atribuicao = ID "=" expr ";"
+se         = "se" "(" expr ")" bloco
+             ["senao" (se | bloco)]
+enquanto   = "enquanto" "(" expr ")" bloco
+para       = "para" ID "de" expr "ate" expr
+             ["passo" expr] bloco
+repita     = "repita" bloco "ate" "(" expr ")" ";"
+retorne    = "retorne" [expr] ";"
+mostre     = "mostre" "(" argumentos ")" ";"
+leia       = "leia" "(" ID ")" ";"
+
+expr       = ou
+ou         = e {"ou" e}
+e          = nao {"e" nao}
+nao        = "nao" nao | relacional
+relacional = soma [("=="|"!="|"<"|"<="|">"|">=") soma]
+soma       = termo {("+"|"-") termo}
+termo      = unario {("*"|"/"|"%") unario}
+unario     = "-" unario | potencia
+potencia   = primario ["^" unario]
+primario   = NUM_INT | NUM_REAL | TEXTO | "verdadeiro"
+           | "falso" | ID | chamada | "(" expr ")"
+chamada    = ID "(" [argumentos] ")"
+argumentos = expr {"," expr}
+\end{lstlisting}
+
+\subsection{Precedência e associatividade}
+A precedência dos operadores não é tratada por tabelas externas. Ela está
+embutida na hierarquia das regras de expressão: quanto mais profunda a regra,
+maior a precedência do operador que ela reconhece (Tabela~\ref{tab:prec}). Na
+expressão \texttt{2 + 3 * 4}, por exemplo, a regra \texttt{soma} só consome o
+\texttt{+} depois que \texttt{termo} já reconheceu \texttt{3 * 4} por inteiro,
+e a multiplicação fica mais funda na árvore.
+
+\begin{table}[!t]
+\caption{Precedência (crescente) e associatividade}\label{tab:prec}
+\centering\footnotesize
+\begin{tabular}{@{}c l >{\ttfamily}l l@{}}
+\toprule
+\textbf{Nível} & \textbf{Regra} & \normalfont\textbf{Operadores} & \textbf{Assoc.} \\
+\midrule
+1 & ou         & ou                & esquerda \\
+2 & e          & e                 & esquerda \\
+3 & nao        & nao               & prefixo \\
+4 & relacional & == != < <= > >=   & nenhuma \\
+5 & soma       & + -               & esquerda \\
+6 & termo      & * / \%            & esquerda \\
+7 & unario     & - (unário)        & prefixo \\
+8 & potencia   & \^{}              & direita \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A associatividade à esquerda de \texttt{+}, \texttt{-}, \texttt{*} e
+\texttt{/} vem da forma iterativa das regras (\texttt{soma = termo \{("+"|"-")
+termo\}}): a cada volta do laço, a árvore acumulada torna-se o filho esquerdo
+do novo nó. Assim, \texttt{10 - 3 - 2} resulta em $(10-3)-2$. A potência
+é associativa à direita, como na matemática: \texttt{potencia} chama
+\texttt{unario}, que pode voltar a \texttt{potencia}, e por isso
+\texttt{2 \^{} 3 \^{} 2} vale $2^{9}$. Os operadores relacionais foram
+definidos como não associativos. Uma cadeia como \texttt{a < b < c} gera um
+erro sintático que sugere o uso de \texttt{e}, pois comparar um valor lógico
+com um número não teria sentido.
+
+\subsection{Propriedade LL e estratégia de análise}
+A gramática não tem recursão à esquerda, e quase todas as alternativas de
+\texttt{comando} começam por uma palavra reservada distinta. Por isso, um
+token de antecipação basta para escolher a produção. A única exceção são os
+comandos iniciados por \texttt{ID}, que podem ser uma atribuição
+(\texttt{x = ...}) ou uma chamada (\texttt{f(...)}). Nesse ponto o parser
+examina um segundo token (\texttt{=} ou \texttt{(}), o que torna essa
+alternativa LL(2). O mesmo ocorre em \texttt{primario}, para distinguir uma
+variável de uma chamada de função.
+
+O parser é descendente recursivo: cada não-terminal corresponde a um método
+da classe \texttt{Parser}, e a \textit{docstring} de cada método reproduz a produção
+que ele implementa. A Listagem~\ref{lst:parser} mostra o método da regra
+\texttt{soma}. Repetições EBNF viram laços \texttt{while}, opcionais viram
+\texttt{if}, e alternativas viram testes sobre o token atual.
+
+\begin{lstlisting}[language=Python,caption={Método da regra \texttt{soma} (simplificado).},label=lst:parser,numbers=none,xleftmargin=0.3em,framexleftmargin=0.2em]
+def _soma(self):
+    # soma -> termo { ("+"|"-") termo }
+    no = self._termo()
+    while op := self._aceitar(T.MAIS, T.MENOS):
+        no = Binaria(op.lexema, no, self._termo())
+    return no
+\end{lstlisting}
+
+\subsection{Integração com o analisador léxico}
+Os dois analisadores se comunicam pela cadeia de tokens. O scanner produz a
+lista completa, terminada em \texttt{EOF}, e o parser a percorre com um
+índice. Quatro primitivas concentram o acesso: \texttt{atual} (token sob
+análise), \texttt{espiar} (antecipação de $k$ tokens), \texttt{aceitar}
+(consome o token se ele for do tipo esperado) e \texttt{esperar} (consome o
+token obrigatório ou lança um erro sintático). Como cada token carrega linha
+e coluna, os erros sintáticos são localizados com precisão no código-fonte.
+Quando há erros léxicos, a análise sintática não é executada.
+
+\subsection{Árvore sintática}
+Durante o reconhecimento, cada método constrói e devolve um nó da árvore
+sintática abstrata. Os nós são classes de dados (\texttt{Programa},
+\texttt{Funcao}, \texttt{Declaracao}, \texttt{Se}, \texttt{Enquanto},
+\texttt{Para}, \texttt{Repita}, \texttt{Binaria}, \texttt{Unaria},
+\texttt{Literal}, \texttt{Variavel}, \texttt{Chamada} etc.) que expõem os
+métodos \texttt{rotulo()} e \texttt{filhos()}. Isso permite que uma única
+rotina desenhe a árvore no terminal e a exporte para Graphviz ou para
+\LaTeX. A Fig.~\ref{fig:arvore} mostra a árvore do programa da
+Listagem~\ref{lst:mini}. Nela, a precedência de \texttt{*} sobre \texttt{+}
+e de \texttt{>} sobre \texttt{e} fica visível na profundidade dos nós.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.92\columnwidth]{arvore_mini.png}
+\caption{Árvore sintática gerada pelo analisador para \texttt{mini.mare}
+(exportada em formato DOT e desenhada com Graphviz).}
+\label{fig:arvore}
+\end{figure}
+
+A AST difere da árvore de derivação completa porque omite os nós
+intermediários sem conteúdo. Uma expressão como \texttt{x}, por exemplo, não
+aparece como a cadeia \texttt{expr}$\rightarrow$\texttt{ou}$\rightarrow\dots
+\rightarrow$\texttt{primario}, e sim como um único nó \texttt{Variavel}. A
+AST também dispensa tokens de pontuação, cuja função se esgota na análise.
+Essa forma compacta é a que será percorrida pelas fases seguintes.
+
+\subsection{Derivação}
+Para relacionar a gramática com a árvore, a derivação mais à esquerda da
+expressão \texttt{2 + 3 * 4} é mostrada abaixo, em que $\Rightarrow^{*}$
+resume as cadeias de regras unitárias (\texttt{relacional} $\Rightarrow$
+\texttt{soma}, \texttt{unario} $\Rightarrow$ \texttt{potencia} etc.):
+
+{\footnotesize
+\begin{align*}
+\textit{expr} &\Rightarrow^{*} \textit{soma}
+  \Rightarrow \textit{termo}\ \texttt{+}\ \textit{termo}\\
+&\Rightarrow^{*} \texttt{2}\ \texttt{+}\ \textit{termo}
+  \Rightarrow \texttt{2}\ \texttt{+}\ \textit{unario}\ \texttt{*}\ \textit{unario}\\
+&\Rightarrow^{*} \texttt{2 + 3}\ \texttt{*}\ \textit{unario}
+  \Rightarrow^{*} \texttt{2 + 3 * 4}
+\end{align*}}
+
+\noindent Como o \texttt{*} só pode ser produzido dentro de \textit{termo},
+nenhuma derivação coloca \texttt{2 + 3} como operando da multiplicação. A
+gramática, portanto, não é ambígua quanto à precedência.
+
+\subsection{Tratamento de erros}
+Ao encontrar um token inesperado, o parser gera uma mensagem que informa o
+que era esperado, em que contexto e o que foi encontrado, e imprime a linha
+do código com um marcador sob a coluna. O ponto e vírgula esquecido recebe
+um tratamento especial: se o token seguinte estiver em outra linha, o erro é
+apontado no fim da linha anterior, onde o programador de fato errou.
+
+A recuperação usa o \emph{modo pânico}~\cite{aho2006}. O erro é registrado, e
+o parser descarta tokens até um ponto de sincronização, que pode ser um
+\texttt{;}, um \texttt{\}} ou o início de outro comando. Um bloco
+\texttt{\{...\}} encontrado nesse percurso é descartado por inteiro, com
+contagem de chaves, para que o seu \texttt{\}} não feche o bloco externo por
+engano. Com isso, vários erros são relatados em uma única execução, sem
+cascatas de mensagens falsas.
+
+% ======================================================================
+\section{Resultados}\label{sec:result}
+
+A implementação tem cerca de 1.150 linhas de Python, distribuídas em seis
+módulos (\texttt{tokens}, \texttt{lexer}, \texttt{parser}, \texttt{arvore},
+\texttt{erros} e \texttt{exibicao}), e uma interface de linha de comando que
+exibe, sob demanda, as expressões regulares, a cadeia de tokens, a tabela de
+lexemas e a árvore sintática. O programa de demonstração completo, de 60
+linhas, que usa todos os recursos da Tabela~\ref{tab:recursos}, foi aceito, e
+sua árvore reflete a precedência esperada em todas as expressões.
+
+Para verificar a detecção de erros, foram criados dois arquivos com falhas
+intencionais. No léxico, foram identificados os cinco erros inseridos: um
+caractere acentuado em identificador (\texttt{preço}), um número malformado
+(\texttt{12abc}), um real incompleto (\texttt{3.}), um texto sem aspas de
+fechamento e um símbolo fora do alfabeto (\texttt{@}). No sintático, a
+Listagem~\ref{lst:erros} reproduz os seis erros relatados em uma única
+execução, cada um na posição correta.
+
+\begin{lstlisting}[style=ebnf,caption={Saída para \texttt{erro\_sintatico.mare} (resumida).},label=lst:erros]
+[2:16] esperado ':' apos o parametro 'n',
+       mas foi encontrado 'inteiro'
+[7:24] esperado ';' ao final da declaracao
+       (faltou ';' no fim da linha)
+[8:29] esperado ')' para fechar a expressao entre
+       parenteses, mas foi encontrado ';'
+[9:8]  esperado '(' apos 'se', mas foi encontrado 'a'
+[12:5] 'senao' sem um 'se' correspondente
+[15:21] comparacoes nao podem ser encadeadas;
+        use 'e' (ex.: a < b e b < c)
+\end{lstlisting}
+
+\subsection{Rastreamento de um caso rejeitado}
+Para mostrar o percurso completo de código, tokens e reconhecimento, a
+ferramenta tem a opção \texttt{-{}-rastro}, que imprime cada regra aplicada
+($\blacktriangleright$), cada token consumido (\checkmark) e cada erro ou
+descarte ($\times$). O arquivo \texttt{rejeitado.mare} é o mesmo
+\texttt{mini.mare} da Listagem~\ref{lst:mini}, com um único erro: falta o
+\texttt{)} que fecha a condição, na linha~4
+(\texttt{se (x > 10 e nao falso \{}). A cadeia de tokens dessa linha é
+
+\smallskip
+{\scriptsize\ttfamily <SE> <ABRE\_PAR> <ID,x> <MAIOR> <NUM\_INT,10> <E> <NAO> <FALSO> <ABRE\_CHAVE>}
+\smallskip
+
+\noindent e a Listagem~\ref{lst:rastro} traz o trecho final do rastreamento.
+
+\begin{lstlisting}[style=ebnf,caption={Trecho do rastreamento de \texttt{rejeitado.mare}.},label=lst:rastro]
+> se     [proximo: <SE,'se'>]
+  v consome <SE,'se'>          (4:5)
+  v consome <ABRE_PAR,'('>     (4:8)
+  > expr  [proximo: <ID,'x'>]
+    ...   (x > 10 e nao falso reconhecido)
+    v consome <FALSO,'falso'>  (4:22)
+  x ERRO [4:28] esperado ')' para fechar a
+    condicao do 'se', mas foi encontrado '{'
+  x descarta <ABRE_CHAVE,'{'> ... <FECHA_CHAVE,'}'>
+v consome <FECHA_CHAVE,'}'>    (7:1)
+\end{lstlisting}
+
+A rejeição se explica pela gramática. Na regra
+\texttt{se = "se" "(" expr ")" bloco}, o parser consome \texttt{se} e
+\texttt{(} e chama \texttt{expr}, que reconhece
+\texttt{x > 10 e nao falso} por inteiro. Ao retornar, o próximo token é
+\texttt{ABRE\_CHAVE}. Nenhuma regra de expressão aceita esse token como
+continuação: \texttt{\{} não é operador, e por isso \texttt{expr} termina.
+A produção de \texttt{se}, por sua vez, exige \texttt{FECHA\_PAR} nessa
+posição. A chamada \texttt{esperar(FECHA\_PAR)} falha, e o erro é emitido na
+coluna do \texttt{\{}. A recuperação descarta o bloco \texttt{\{...\}} com as
+chaves balanceadas, e o \texttt{\}} da linha~7 fecha corretamente o bloco
+\texttt{principal}. Desse modo, apenas um erro é relatado, sem mensagens em
+cascata.
+
+\subsection{Testes automatizados}
+Por fim, 28 testes automatizados (\texttt{unittest}) cobrem a distinção entre
+palavras reservadas e identificadores, a prioridade entre as expressões
+regulares, a contagem de linhas e colunas, a precedência e a associatividade
+dos operadores, todos os comandos da linguagem, as mensagens de erro e o
+número de erros relatados após a recuperação. Todos os testes passam.
+
+% ======================================================================
+\section{Conclusão}\label{sec:concl}
+
+Este trabalho apresentou a especificação da linguagem Maré e a implementação
+dos seus analisadores léxico e sintático. Descrever os tokens por expressões
+regulares ordenadas resolveu as ambiguidades léxicas de forma simples e
+verificável. Uma gramática LL projetada com cuidado, por sua vez, permitiu um
+parser descendente recursivo curto e legível, em que a precedência dos
+operadores é consequência direta da estrutura das regras. A opção por uma
+implementação sem geradores exigiu mais código, mas deu à equipe controle
+total sobre as mensagens de erro e sobre a recuperação em modo pânico.
+
+Nas próximas etapas, a AST será a entrada da análise semântica, com tabela de
+símbolos, verificação de escopo e checagem de tipos (por exemplo, rejeitar
+\texttt{seja x: inteiro = "a";}). Em seguida, será construído um
+interpretador ou gerador de código, o que completará o protótipo de
+compilador da Maré.
+
+O código-fonte está disponível em
+\url{https://github.com/gustavoteixeirabittencourt/mare}.
+
+% ======================================================================
+\begin{thebibliography}{00}
+\bibitem{aho2006} A. V. Aho, M. S. Lam, R. Sethi e J. D. Ullman,
+\emph{Compilers: Principles, Techniques, and Tools}, 2.\ ed. Boston, MA,
+EUA: Addison-Wesley, 2006.
+
+\bibitem{cooper2011} K. D. Cooper e L. Torczon, \emph{Engineering a
+Compiler}, 2.\ ed. Burlington, MA, EUA: Morgan Kaufmann, 2011.
+
+\bibitem{hopcroft2006} J. E. Hopcroft, R. Motwani e J. D. Ullman,
+\emph{Introduction to Automata Theory, Languages, and Computation}, 3.\ ed.
+Boston, MA, EUA: Addison-Wesley, 2006.
+
+\bibitem{louden2004} K. C. Louden, \emph{Compiladores: Princípios e
+Práticas}. São Paulo, Brasil: Thomson Learning, 2004.
+
+\bibitem{grune2008} D. Grune e C. J. H. Jacobs, \emph{Parsing Techniques: A
+Practical Guide}, 2.\ ed. Nova York, NY, EUA: Springer, 2008.
+
+\bibitem{wirth1977} N. Wirth, ``What can we do about the unnecessary
+diversity of notation for syntactic definitions?'' \emph{Communications of
+the ACM}, vol.~20, n.~11, pp.~822--823, 1977.
+
+\bibitem{nystrom2021} R. Nystrom, \emph{Crafting Interpreters}. Genever
+Benning, 2021.
+
+\bibitem{pyre} Python Software Foundation, ``re --- Regular expression
+operations,'' \emph{Python 3 Documentation}. [Online]. Disponível em:
+\url{https://docs.python.org/3/library/re.html}
+\end{thebibliography}
+
+\end{document}
