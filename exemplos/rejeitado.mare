@@ -1,0 +1,7 @@
+# Mesmo programa de mini.mare, mas com UM erro: falta ')' na condição do se.
+principal {
+    seja x: inteiro = 2 + 3 * 4;
+    se (x > 10 e nao falso {
+        mostre(x);
+    }
+}

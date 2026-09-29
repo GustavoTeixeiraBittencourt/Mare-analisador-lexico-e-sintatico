@@ -1,0 +1,19 @@
+# Fatorial recursivo e iterativo em Maré
+funcao fatorial(n: inteiro) -> inteiro {
+    se (n <= 1) {
+        retorne 1;
+    }
+    retorne n * fatorial(n - 1);
+}
+
+principal {
+    seja n: inteiro;
+    leia(n);
+    seja acumulado: inteiro = 1;
+    para i de 2 ate n {
+        acumulado = acumulado * i;
+    }
+    se (acumulado == fatorial(n)) {
+        mostre("Fatorial de ", n, " = ", acumulado);
+    }
+}

@@ -1,0 +1,19 @@
+# Este arquivo contém erros SINTÁTICOS de propósito.
+funcao dobro(n inteiro) -> inteiro {
+    retorne n * 2;
+}
+
+principal {
+    seja a: inteiro = 5
+    seja b: inteiro = (a + 3;
+    se a > b {
+        mostre("maior");
+    }
+    senao {
+        mostre("menor");
+    }
+    enquanto (a < b < 10) {
+        a = a + 1;
+    }
+    seja ok: logico = verdadeiro;
+}

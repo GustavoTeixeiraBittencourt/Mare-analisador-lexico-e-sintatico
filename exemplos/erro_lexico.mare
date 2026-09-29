@@ -1,0 +1,8 @@
+# Este arquivo contém erros LÉXICOS de propósito.
+principal {
+    seja preço: real = 10.5;
+    seja total: inteiro = 12abc;
+    seja x: real = 3.;
+    seja msg: texto = "texto sem fim;
+    x = x @ 2;
+}

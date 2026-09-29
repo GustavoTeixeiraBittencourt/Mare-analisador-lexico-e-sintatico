@@ -1,0 +1,54 @@
+fixo MEDIA_MINIMA: real = 7.0;
+
+funcao media(p1: real, p2: real, peso: inteiro) -> real {
+    retorne (p1 + p2 * peso) / (1 + peso);
+}
+
+funcao eh_par(n: inteiro) -> logico {
+    retorne n % 2 == 0;
+}
+
+funcao cabecalho() {
+    mostre("=== Boletim ===");
+}
+
+principal {
+    seja nome: texto = "Ana";
+    seja nota1: real = 6.5;
+    seja nota2: real;
+    seja faltas: inteiro = 3;
+    seja aprovado: logico = falso;
+
+    leia(nota2);
+    cabecalho();
+
+    seja m: real = media(nota1, nota2, 2);
+
+    # regra lógica: média suficiente E poucas faltas, OU nota máxima na P2
+    se (m >= MEDIA_MINIMA e faltas <= 10 ou nota2 == 10.0) {
+        aprovado = verdadeiro;
+        mostre(nome, " aprovada com media ", m);
+    } senao se (m >= 5.0 e nao (faltas > 10)) {
+        mostre(nome, " em recuperacao");
+    } senao {
+        mostre(nome, " reprovada");
+    }
+
+    # equação matemática com precedência e potência
+    seja delta: real = 2 ^ 3 ^ 2 - 4 * nota1 * -nota2 + (faltas % 2);
+
+    seja i: inteiro = 0;
+    enquanto (i < 3 e nao aprovado) {
+        i = i + 1;
+    }
+
+    para k de 1 ate 10 passo 2 {
+        se (eh_par(k) != verdadeiro) {
+            mostre(k, " ao quadrado = ", k ^ 2);
+        }
+    }
+
+    repita {
+        faltas = faltas - 1;
+    } ate (faltas <= 0);
+}

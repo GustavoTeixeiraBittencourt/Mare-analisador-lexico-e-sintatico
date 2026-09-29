@@ -1,0 +1,6 @@
+principal {
+    seja x: inteiro = 2 + 3 * 4;
+    se (x > 10 e nao falso) {
+        mostre(x);
+    }
+}
