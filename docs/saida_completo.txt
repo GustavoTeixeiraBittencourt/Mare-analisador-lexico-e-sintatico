@@ -1,0 +1,634 @@
+
+==============================================================================
+  EXPRESSÕES REGULARES DO SCANNER (ordem de prioridade)
+==============================================================================
++--------+-------------------+---------------------------------------+
+| Prior. | Regra             | Expressão regular                     |
++--------+-------------------+---------------------------------------+
+| 1      | ESPACO            | [ \t\r]+                              |
+| 2      | NOVA_LINHA        | \n                                    |
+| 3      | COMENTARIO_BLOCO  | \#\*[\s\S]*?\*\#                      |
+| 4      | COMENTARIO_ABERTO | \#\*                                  |
+| 5      | COMENTARIO_LINHA  | \#[^\n]*                              |
+| 6      | NUM_INVALIDO      | \d+(?:\.\d+)?[A-Za-z_]\w*|\d+\.(?!\d) |
+| 7      | NUM_REAL          | \d+\.\d+                              |
+| 8      | NUM_INT           | \d+                                   |
+| 9      | TEXTO             | "(?:\\.|[^"\\\n])*"                   |
+| 10     | TEXTO_ABERTO      | "(?:\\.|[^"\\\n])*                    |
+| 11     | ID                | [A-Za-z_][A-Za-z0-9_]*                |
+| 12     | SIMBOLO           | ->|==|!=|<=|>=|[<>=+\-*/%^(){};,:]    |
+| 13     | DESCONHECIDO      | .                                     |
++--------+-------------------+---------------------------------------+
+
+==============================================================================
+  CADEIA DE TOKENS
+==============================================================================
++-----+---------+------------------------+---------------+---------------------+
+| #   | Lin:Col | Lexema                 | Token         | Classe              |
++-----+---------+------------------------+---------------+---------------------+
+| 1   | 7:1     | fixo                   | FIXO          | Palavra reservada   |
+| 2   | 7:6     | MEDIA_MINIMA           | ID            | Identificador       |
+| 3   | 7:18    | :                      | DOIS_PONTOS   | Delimitador         |
+| 4   | 7:20    | real                   | T_REAL        | Tipo primitivo      |
+| 5   | 7:25    | =                      | ATRIB         | Atribuição          |
+| 6   | 7:27    | 7.0                    | NUM_REAL      | Literal             |
+| 7   | 7:30    | ;                      | PONTO_VIRGULA | Delimitador         |
+| 8   | 9:1     | funcao                 | FUNCAO        | Palavra reservada   |
+| 9   | 9:8     | media                  | ID            | Identificador       |
+| 10  | 9:13    | (                      | ABRE_PAR      | Delimitador         |
+| 11  | 9:14    | p1                     | ID            | Identificador       |
+| 12  | 9:16    | :                      | DOIS_PONTOS   | Delimitador         |
+| 13  | 9:18    | real                   | T_REAL        | Tipo primitivo      |
+| 14  | 9:22    | ,                      | VIRGULA       | Delimitador         |
+| 15  | 9:24    | p2                     | ID            | Identificador       |
+| 16  | 9:26    | :                      | DOIS_PONTOS   | Delimitador         |
+| 17  | 9:28    | real                   | T_REAL        | Tipo primitivo      |
+| 18  | 9:32    | ,                      | VIRGULA       | Delimitador         |
+| 19  | 9:34    | peso                   | ID            | Identificador       |
+| 20  | 9:38    | :                      | DOIS_PONTOS   | Delimitador         |
+| 21  | 9:40    | inteiro                | T_INTEIRO     | Tipo primitivo      |
+| 22  | 9:47    | )                      | FECHA_PAR     | Delimitador         |
+| 23  | 9:49    | ->                     | SETA          | Delimitador         |
+| 24  | 9:52    | real                   | T_REAL        | Tipo primitivo      |
+| 25  | 9:57    | {                      | ABRE_CHAVE    | Delimitador         |
+| 26  | 10:5    | retorne                | RETORNE       | Palavra reservada   |
+| 27  | 10:13   | (                      | ABRE_PAR      | Delimitador         |
+| 28  | 10:14   | p1                     | ID            | Identificador       |
+| 29  | 10:17   | +                      | MAIS          | Operador aritmético |
+| 30  | 10:19   | p2                     | ID            | Identificador       |
+| 31  | 10:22   | *                      | MULT          | Operador aritmético |
+| 32  | 10:24   | peso                   | ID            | Identificador       |
+| 33  | 10:28   | )                      | FECHA_PAR     | Delimitador         |
+| 34  | 10:30   | /                      | DIV           | Operador aritmético |
+| 35  | 10:32   | (                      | ABRE_PAR      | Delimitador         |
+| 36  | 10:33   | 1                      | NUM_INT       | Literal             |
+| 37  | 10:35   | +                      | MAIS          | Operador aritmético |
+| 38  | 10:37   | peso                   | ID            | Identificador       |
+| 39  | 10:41   | )                      | FECHA_PAR     | Delimitador         |
+| 40  | 10:42   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 41  | 11:1    | }                      | FECHA_CHAVE   | Delimitador         |
+| 42  | 13:1    | funcao                 | FUNCAO        | Palavra reservada   |
+| 43  | 13:8    | eh_par                 | ID            | Identificador       |
+| 44  | 13:14   | (                      | ABRE_PAR      | Delimitador         |
+| 45  | 13:15   | n                      | ID            | Identificador       |
+| 46  | 13:16   | :                      | DOIS_PONTOS   | Delimitador         |
+| 47  | 13:18   | inteiro                | T_INTEIRO     | Tipo primitivo      |
+| 48  | 13:25   | )                      | FECHA_PAR     | Delimitador         |
+| 49  | 13:27   | ->                     | SETA          | Delimitador         |
+| 50  | 13:30   | logico                 | T_LOGICO      | Tipo primitivo      |
+| 51  | 13:37   | {                      | ABRE_CHAVE    | Delimitador         |
+| 52  | 14:5    | retorne                | RETORNE       | Palavra reservada   |
+| 53  | 14:13   | n                      | ID            | Identificador       |
+| 54  | 14:15   | %                      | MOD           | Operador aritmético |
+| 55  | 14:17   | 2                      | NUM_INT       | Literal             |
+| 56  | 14:19   | ==                     | IGUAL         | Operador relacional |
+| 57  | 14:22   | 0                      | NUM_INT       | Literal             |
+| 58  | 14:23   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 59  | 15:1    | }                      | FECHA_CHAVE   | Delimitador         |
+| 60  | 17:1    | funcao                 | FUNCAO        | Palavra reservada   |
+| 61  | 17:8    | cabecalho              | ID            | Identificador       |
+| 62  | 17:17   | (                      | ABRE_PAR      | Delimitador         |
+| 63  | 17:18   | )                      | FECHA_PAR     | Delimitador         |
+| 64  | 17:20   | {                      | ABRE_CHAVE    | Delimitador         |
+| 65  | 18:5    | mostre                 | MOSTRE        | Palavra reservada   |
+| 66  | 18:11   | (                      | ABRE_PAR      | Delimitador         |
+| 67  | 18:12   | "=== Boletim ==="      | TEXTO         | Literal             |
+| 68  | 18:29   | )                      | FECHA_PAR     | Delimitador         |
+| 69  | 18:30   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 70  | 19:1    | }                      | FECHA_CHAVE   | Delimitador         |
+| 71  | 21:1    | principal              | PRINCIPAL     | Palavra reservada   |
+| 72  | 21:11   | {                      | ABRE_CHAVE    | Delimitador         |
+| 73  | 22:5    | seja                   | SEJA          | Palavra reservada   |
+| 74  | 22:10   | nome                   | ID            | Identificador       |
+| 75  | 22:14   | :                      | DOIS_PONTOS   | Delimitador         |
+| 76  | 22:16   | texto                  | T_TEXTO       | Tipo primitivo      |
+| 77  | 22:22   | =                      | ATRIB         | Atribuição          |
+| 78  | 22:24   | "Ana"                  | TEXTO         | Literal             |
+| 79  | 22:29   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 80  | 23:5    | seja                   | SEJA          | Palavra reservada   |
+| 81  | 23:10   | nota1                  | ID            | Identificador       |
+| 82  | 23:15   | :                      | DOIS_PONTOS   | Delimitador         |
+| 83  | 23:17   | real                   | T_REAL        | Tipo primitivo      |
+| 84  | 23:22   | =                      | ATRIB         | Atribuição          |
+| 85  | 23:24   | 6.5                    | NUM_REAL      | Literal             |
+| 86  | 23:27   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 87  | 24:5    | seja                   | SEJA          | Palavra reservada   |
+| 88  | 24:10   | nota2                  | ID            | Identificador       |
+| 89  | 24:15   | :                      | DOIS_PONTOS   | Delimitador         |
+| 90  | 24:17   | real                   | T_REAL        | Tipo primitivo      |
+| 91  | 24:21   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 92  | 25:5    | seja                   | SEJA          | Palavra reservada   |
+| 93  | 25:10   | faltas                 | ID            | Identificador       |
+| 94  | 25:16   | :                      | DOIS_PONTOS   | Delimitador         |
+| 95  | 25:18   | inteiro                | T_INTEIRO     | Tipo primitivo      |
+| 96  | 25:26   | =                      | ATRIB         | Atribuição          |
+| 97  | 25:28   | 3                      | NUM_INT       | Literal             |
+| 98  | 25:29   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 99  | 26:5    | seja                   | SEJA          | Palavra reservada   |
+| 100 | 26:10   | aprovado               | ID            | Identificador       |
+| 101 | 26:18   | :                      | DOIS_PONTOS   | Delimitador         |
+| 102 | 26:20   | logico                 | T_LOGICO      | Tipo primitivo      |
+| 103 | 26:27   | =                      | ATRIB         | Atribuição          |
+| 104 | 26:29   | falso                  | FALSO         | Literal             |
+| 105 | 26:34   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 106 | 28:5    | leia                   | LEIA          | Palavra reservada   |
+| 107 | 28:9    | (                      | ABRE_PAR      | Delimitador         |
+| 108 | 28:10   | nota2                  | ID            | Identificador       |
+| 109 | 28:15   | )                      | FECHA_PAR     | Delimitador         |
+| 110 | 28:16   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 111 | 29:5    | cabecalho              | ID            | Identificador       |
+| 112 | 29:14   | (                      | ABRE_PAR      | Delimitador         |
+| 113 | 29:15   | )                      | FECHA_PAR     | Delimitador         |
+| 114 | 29:16   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 115 | 31:5    | seja                   | SEJA          | Palavra reservada   |
+| 116 | 31:10   | m                      | ID            | Identificador       |
+| 117 | 31:11   | :                      | DOIS_PONTOS   | Delimitador         |
+| 118 | 31:13   | real                   | T_REAL        | Tipo primitivo      |
+| 119 | 31:18   | =                      | ATRIB         | Atribuição          |
+| 120 | 31:20   | media                  | ID            | Identificador       |
+| 121 | 31:25   | (                      | ABRE_PAR      | Delimitador         |
+| 122 | 31:26   | nota1                  | ID            | Identificador       |
+| 123 | 31:31   | ,                      | VIRGULA       | Delimitador         |
+| 124 | 31:33   | nota2                  | ID            | Identificador       |
+| 125 | 31:38   | ,                      | VIRGULA       | Delimitador         |
+| 126 | 31:40   | 2                      | NUM_INT       | Literal             |
+| 127 | 31:41   | )                      | FECHA_PAR     | Delimitador         |
+| 128 | 31:42   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 129 | 34:5    | se                     | SE            | Palavra reservada   |
+| 130 | 34:8    | (                      | ABRE_PAR      | Delimitador         |
+| 131 | 34:9    | m                      | ID            | Identificador       |
+| 132 | 34:11   | >=                     | MAIOR_IGUAL   | Operador relacional |
+| 133 | 34:14   | MEDIA_MINIMA           | ID            | Identificador       |
+| 134 | 34:27   | e                      | E             | Operador lógico     |
+| 135 | 34:29   | faltas                 | ID            | Identificador       |
+| 136 | 34:36   | <=                     | MENOR_IGUAL   | Operador relacional |
+| 137 | 34:39   | 10                     | NUM_INT       | Literal             |
+| 138 | 34:42   | ou                     | OU            | Operador lógico     |
+| 139 | 34:45   | nota2                  | ID            | Identificador       |
+| 140 | 34:51   | ==                     | IGUAL         | Operador relacional |
+| 141 | 34:54   | 10.0                   | NUM_REAL      | Literal             |
+| 142 | 34:58   | )                      | FECHA_PAR     | Delimitador         |
+| 143 | 34:60   | {                      | ABRE_CHAVE    | Delimitador         |
+| 144 | 35:9    | aprovado               | ID            | Identificador       |
+| 145 | 35:18   | =                      | ATRIB         | Atribuição          |
+| 146 | 35:20   | verdadeiro             | VERDADEIRO    | Literal             |
+| 147 | 35:30   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 148 | 36:9    | mostre                 | MOSTRE        | Palavra reservada   |
+| 149 | 36:15   | (                      | ABRE_PAR      | Delimitador         |
+| 150 | 36:16   | nome                   | ID            | Identificador       |
+| 151 | 36:20   | ,                      | VIRGULA       | Delimitador         |
+| 152 | 36:22   | " aprovada com media " | TEXTO         | Literal             |
+| 153 | 36:44   | ,                      | VIRGULA       | Delimitador         |
+| 154 | 36:46   | m                      | ID            | Identificador       |
+| 155 | 36:47   | )                      | FECHA_PAR     | Delimitador         |
+| 156 | 36:48   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 157 | 37:5    | }                      | FECHA_CHAVE   | Delimitador         |
+| 158 | 37:7    | senao                  | SENAO         | Palavra reservada   |
+| 159 | 37:13   | se                     | SE            | Palavra reservada   |
+| 160 | 37:16   | (                      | ABRE_PAR      | Delimitador         |
+| 161 | 37:17   | m                      | ID            | Identificador       |
+| 162 | 37:19   | >=                     | MAIOR_IGUAL   | Operador relacional |
+| 163 | 37:22   | 5.0                    | NUM_REAL      | Literal             |
+| 164 | 37:26   | e                      | E             | Operador lógico     |
+| 165 | 37:28   | nao                    | NAO           | Operador lógico     |
+| 166 | 37:32   | (                      | ABRE_PAR      | Delimitador         |
+| 167 | 37:33   | faltas                 | ID            | Identificador       |
+| 168 | 37:40   | >                      | MAIOR         | Operador relacional |
+| 169 | 37:42   | 10                     | NUM_INT       | Literal             |
+| 170 | 37:44   | )                      | FECHA_PAR     | Delimitador         |
+| 171 | 37:45   | )                      | FECHA_PAR     | Delimitador         |
+| 172 | 37:47   | {                      | ABRE_CHAVE    | Delimitador         |
+| 173 | 38:9    | mostre                 | MOSTRE        | Palavra reservada   |
+| 174 | 38:15   | (                      | ABRE_PAR      | Delimitador         |
+| 175 | 38:16   | nome                   | ID            | Identificador       |
+| 176 | 38:20   | ,                      | VIRGULA       | Delimitador         |
+| 177 | 38:22   | " em recuperacao"      | TEXTO         | Literal             |
+| 178 | 38:39   | )                      | FECHA_PAR     | Delimitador         |
+| 179 | 38:40   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 180 | 39:5    | }                      | FECHA_CHAVE   | Delimitador         |
+| 181 | 39:7    | senao                  | SENAO         | Palavra reservada   |
+| 182 | 39:13   | {                      | ABRE_CHAVE    | Delimitador         |
+| 183 | 40:9    | mostre                 | MOSTRE        | Palavra reservada   |
+| 184 | 40:15   | (                      | ABRE_PAR      | Delimitador         |
+| 185 | 40:16   | nome                   | ID            | Identificador       |
+| 186 | 40:20   | ,                      | VIRGULA       | Delimitador         |
+| 187 | 40:22   | " reprovada"           | TEXTO         | Literal             |
+| 188 | 40:34   | )                      | FECHA_PAR     | Delimitador         |
+| 189 | 40:35   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 190 | 41:5    | }                      | FECHA_CHAVE   | Delimitador         |
+| 191 | 44:5    | seja                   | SEJA          | Palavra reservada   |
+| 192 | 44:10   | delta                  | ID            | Identificador       |
+| 193 | 44:15   | :                      | DOIS_PONTOS   | Delimitador         |
+| 194 | 44:17   | real                   | T_REAL        | Tipo primitivo      |
+| 195 | 44:22   | =                      | ATRIB         | Atribuição          |
+| 196 | 44:24   | 2                      | NUM_INT       | Literal             |
+| 197 | 44:26   | ^                      | POT           | Operador aritmético |
+| 198 | 44:28   | 3                      | NUM_INT       | Literal             |
+| 199 | 44:30   | ^                      | POT           | Operador aritmético |
+| 200 | 44:32   | 2                      | NUM_INT       | Literal             |
+| 201 | 44:34   | -                      | MENOS         | Operador aritmético |
+| 202 | 44:36   | 4                      | NUM_INT       | Literal             |
+| 203 | 44:38   | *                      | MULT          | Operador aritmético |
+| 204 | 44:40   | nota1                  | ID            | Identificador       |
+| 205 | 44:46   | *                      | MULT          | Operador aritmético |
+| 206 | 44:48   | -                      | MENOS         | Operador aritmético |
+| 207 | 44:49   | nota2                  | ID            | Identificador       |
+| 208 | 44:55   | +                      | MAIS          | Operador aritmético |
+| 209 | 44:57   | (                      | ABRE_PAR      | Delimitador         |
+| 210 | 44:58   | faltas                 | ID            | Identificador       |
+| 211 | 44:65   | %                      | MOD           | Operador aritmético |
+| 212 | 44:67   | 2                      | NUM_INT       | Literal             |
+| 213 | 44:68   | )                      | FECHA_PAR     | Delimitador         |
+| 214 | 44:69   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 215 | 46:5    | seja                   | SEJA          | Palavra reservada   |
+| 216 | 46:10   | i                      | ID            | Identificador       |
+| 217 | 46:11   | :                      | DOIS_PONTOS   | Delimitador         |
+| 218 | 46:13   | inteiro                | T_INTEIRO     | Tipo primitivo      |
+| 219 | 46:21   | =                      | ATRIB         | Atribuição          |
+| 220 | 46:23   | 0                      | NUM_INT       | Literal             |
+| 221 | 46:24   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 222 | 47:5    | enquanto               | ENQUANTO      | Palavra reservada   |
+| 223 | 47:14   | (                      | ABRE_PAR      | Delimitador         |
+| 224 | 47:15   | i                      | ID            | Identificador       |
+| 225 | 47:17   | <                      | MENOR         | Operador relacional |
+| 226 | 47:19   | 3                      | NUM_INT       | Literal             |
+| 227 | 47:21   | e                      | E             | Operador lógico     |
+| 228 | 47:23   | nao                    | NAO           | Operador lógico     |
+| 229 | 47:27   | aprovado               | ID            | Identificador       |
+| 230 | 47:35   | )                      | FECHA_PAR     | Delimitador         |
+| 231 | 47:37   | {                      | ABRE_CHAVE    | Delimitador         |
+| 232 | 48:9    | i                      | ID            | Identificador       |
+| 233 | 48:11   | =                      | ATRIB         | Atribuição          |
+| 234 | 48:13   | i                      | ID            | Identificador       |
+| 235 | 48:15   | +                      | MAIS          | Operador aritmético |
+| 236 | 48:17   | 1                      | NUM_INT       | Literal             |
+| 237 | 48:18   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 238 | 49:5    | }                      | FECHA_CHAVE   | Delimitador         |
+| 239 | 51:5    | para                   | PARA          | Palavra reservada   |
+| 240 | 51:10   | k                      | ID            | Identificador       |
+| 241 | 51:12   | de                     | DE            | Palavra reservada   |
+| 242 | 51:15   | 1                      | NUM_INT       | Literal             |
+| 243 | 51:17   | ate                    | ATE           | Palavra reservada   |
+| 244 | 51:21   | 10                     | NUM_INT       | Literal             |
+| 245 | 51:24   | passo                  | PASSO         | Palavra reservada   |
+| 246 | 51:30   | 2                      | NUM_INT       | Literal             |
+| 247 | 51:32   | {                      | ABRE_CHAVE    | Delimitador         |
+| 248 | 52:9    | se                     | SE            | Palavra reservada   |
+| 249 | 52:12   | (                      | ABRE_PAR      | Delimitador         |
+| 250 | 52:13   | eh_par                 | ID            | Identificador       |
+| 251 | 52:19   | (                      | ABRE_PAR      | Delimitador         |
+| 252 | 52:20   | k                      | ID            | Identificador       |
+| 253 | 52:21   | )                      | FECHA_PAR     | Delimitador         |
+| 254 | 52:23   | !=                     | DIFERENTE     | Operador relacional |
+| 255 | 52:26   | verdadeiro             | VERDADEIRO    | Literal             |
+| 256 | 52:36   | )                      | FECHA_PAR     | Delimitador         |
+| 257 | 52:38   | {                      | ABRE_CHAVE    | Delimitador         |
+| 258 | 53:13   | mostre                 | MOSTRE        | Palavra reservada   |
+| 259 | 53:19   | (                      | ABRE_PAR      | Delimitador         |
+| 260 | 53:20   | k                      | ID            | Identificador       |
+| 261 | 53:21   | ,                      | VIRGULA       | Delimitador         |
+| 262 | 53:23   | " ao quadrado = "      | TEXTO         | Literal             |
+| 263 | 53:40   | ,                      | VIRGULA       | Delimitador         |
+| 264 | 53:42   | k                      | ID            | Identificador       |
+| 265 | 53:44   | ^                      | POT           | Operador aritmético |
+| 266 | 53:46   | 2                      | NUM_INT       | Literal             |
+| 267 | 53:47   | )                      | FECHA_PAR     | Delimitador         |
+| 268 | 53:48   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 269 | 54:9    | }                      | FECHA_CHAVE   | Delimitador         |
+| 270 | 55:5    | }                      | FECHA_CHAVE   | Delimitador         |
+| 271 | 57:5    | repita                 | REPITA        | Palavra reservada   |
+| 272 | 57:12   | {                      | ABRE_CHAVE    | Delimitador         |
+| 273 | 58:9    | faltas                 | ID            | Identificador       |
+| 274 | 58:16   | =                      | ATRIB         | Atribuição          |
+| 275 | 58:18   | faltas                 | ID            | Identificador       |
+| 276 | 58:25   | -                      | MENOS         | Operador aritmético |
+| 277 | 58:27   | 1                      | NUM_INT       | Literal             |
+| 278 | 58:28   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 279 | 59:5    | }                      | FECHA_CHAVE   | Delimitador         |
+| 280 | 59:7    | ate                    | ATE           | Palavra reservada   |
+| 281 | 59:11   | (                      | ABRE_PAR      | Delimitador         |
+| 282 | 59:12   | faltas                 | ID            | Identificador       |
+| 283 | 59:19   | <=                     | MENOR_IGUAL   | Operador relacional |
+| 284 | 59:22   | 0                      | NUM_INT       | Literal             |
+| 285 | 59:23   | )                      | FECHA_PAR     | Delimitador         |
+| 286 | 59:24   | ;                      | PONTO_VIRGULA | Delimitador         |
+| 287 | 60:1    | }                      | FECHA_CHAVE   | Delimitador         |
+| 288 | 61:1    | (fim)                  | EOF           | Fim de arquivo      |
++-----+---------+------------------------+---------------+---------------------+
+
+==============================================================================
+  CADEIA DE TOKENS (por linha do código)
+==============================================================================
+   7 | <FIXO> <ID, MEDIA_MINIMA> <DOIS_PONTOS> <T_REAL> <ATRIB> <NUM_REAL, 7.0> <PONTO_VIRGULA>
+   9 | <FUNCAO> <ID, media> <ABRE_PAR> <ID, p1> <DOIS_PONTOS> <T_REAL> <VIRGULA> <ID, p2> <DOIS_PONTOS> <T_REAL> <VIRGULA> <ID, peso> <DOIS_PONTOS> <T_INTEIRO> <FECHA_PAR> <SETA> <T_REAL> <ABRE_CHAVE>
+  10 | <RETORNE> <ABRE_PAR> <ID, p1> <MAIS> <ID, p2> <MULT> <ID, peso> <FECHA_PAR> <DIV> <ABRE_PAR> <NUM_INT, 1> <MAIS> <ID, peso> <FECHA_PAR> <PONTO_VIRGULA>
+  11 | <FECHA_CHAVE>
+  13 | <FUNCAO> <ID, eh_par> <ABRE_PAR> <ID, n> <DOIS_PONTOS> <T_INTEIRO> <FECHA_PAR> <SETA> <T_LOGICO> <ABRE_CHAVE>
+  14 | <RETORNE> <ID, n> <MOD> <NUM_INT, 2> <IGUAL> <NUM_INT, 0> <PONTO_VIRGULA>
+  15 | <FECHA_CHAVE>
+  17 | <FUNCAO> <ID, cabecalho> <ABRE_PAR> <FECHA_PAR> <ABRE_CHAVE>
+  18 | <MOSTRE> <ABRE_PAR> <TEXTO, "=== Boletim ==="> <FECHA_PAR> <PONTO_VIRGULA>
+  19 | <FECHA_CHAVE>
+  21 | <PRINCIPAL> <ABRE_CHAVE>
+  22 | <SEJA> <ID, nome> <DOIS_PONTOS> <T_TEXTO> <ATRIB> <TEXTO, "Ana"> <PONTO_VIRGULA>
+  23 | <SEJA> <ID, nota1> <DOIS_PONTOS> <T_REAL> <ATRIB> <NUM_REAL, 6.5> <PONTO_VIRGULA>
+  24 | <SEJA> <ID, nota2> <DOIS_PONTOS> <T_REAL> <PONTO_VIRGULA>
+  25 | <SEJA> <ID, faltas> <DOIS_PONTOS> <T_INTEIRO> <ATRIB> <NUM_INT, 3> <PONTO_VIRGULA>
+  26 | <SEJA> <ID, aprovado> <DOIS_PONTOS> <T_LOGICO> <ATRIB> <FALSO> <PONTO_VIRGULA>
+  28 | <LEIA> <ABRE_PAR> <ID, nota2> <FECHA_PAR> <PONTO_VIRGULA>
+  29 | <ID, cabecalho> <ABRE_PAR> <FECHA_PAR> <PONTO_VIRGULA>
+  31 | <SEJA> <ID, m> <DOIS_PONTOS> <T_REAL> <ATRIB> <ID, media> <ABRE_PAR> <ID, nota1> <VIRGULA> <ID, nota2> <VIRGULA> <NUM_INT, 2> <FECHA_PAR> <PONTO_VIRGULA>
+  34 | <SE> <ABRE_PAR> <ID, m> <MAIOR_IGUAL> <ID, MEDIA_MINIMA> <E> <ID, faltas> <MENOR_IGUAL> <NUM_INT, 10> <OU> <ID, nota2> <IGUAL> <NUM_REAL, 10.0> <FECHA_PAR> <ABRE_CHAVE>
+  35 | <ID, aprovado> <ATRIB> <VERDADEIRO> <PONTO_VIRGULA>
+  36 | <MOSTRE> <ABRE_PAR> <ID, nome> <VIRGULA> <TEXTO, " aprovada com media "> <VIRGULA> <ID, m> <FECHA_PAR> <PONTO_VIRGULA>
+  37 | <FECHA_CHAVE> <SENAO> <SE> <ABRE_PAR> <ID, m> <MAIOR_IGUAL> <NUM_REAL, 5.0> <E> <NAO> <ABRE_PAR> <ID, faltas> <MAIOR> <NUM_INT, 10> <FECHA_PAR> <FECHA_PAR> <ABRE_CHAVE>
+  38 | <MOSTRE> <ABRE_PAR> <ID, nome> <VIRGULA> <TEXTO, " em recuperacao"> <FECHA_PAR> <PONTO_VIRGULA>
+  39 | <FECHA_CHAVE> <SENAO> <ABRE_CHAVE>
+  40 | <MOSTRE> <ABRE_PAR> <ID, nome> <VIRGULA> <TEXTO, " reprovada"> <FECHA_PAR> <PONTO_VIRGULA>
+  41 | <FECHA_CHAVE>
+  44 | <SEJA> <ID, delta> <DOIS_PONTOS> <T_REAL> <ATRIB> <NUM_INT, 2> <POT> <NUM_INT, 3> <POT> <NUM_INT, 2> <MENOS> <NUM_INT, 4> <MULT> <ID, nota1> <MULT> <MENOS> <ID, nota2> <MAIS> <ABRE_PAR> <ID, faltas> <MOD> <NUM_INT, 2> <FECHA_PAR> <PONTO_VIRGULA>
+  46 | <SEJA> <ID, i> <DOIS_PONTOS> <T_INTEIRO> <ATRIB> <NUM_INT, 0> <PONTO_VIRGULA>
+  47 | <ENQUANTO> <ABRE_PAR> <ID, i> <MENOR> <NUM_INT, 3> <E> <NAO> <ID, aprovado> <FECHA_PAR> <ABRE_CHAVE>
+  48 | <ID, i> <ATRIB> <ID, i> <MAIS> <NUM_INT, 1> <PONTO_VIRGULA>
+  49 | <FECHA_CHAVE>
+  51 | <PARA> <ID, k> <DE> <NUM_INT, 1> <ATE> <NUM_INT, 10> <PASSO> <NUM_INT, 2> <ABRE_CHAVE>
+  52 | <SE> <ABRE_PAR> <ID, eh_par> <ABRE_PAR> <ID, k> <FECHA_PAR> <DIFERENTE> <VERDADEIRO> <FECHA_PAR> <ABRE_CHAVE>
+  53 | <MOSTRE> <ABRE_PAR> <ID, k> <VIRGULA> <TEXTO, " ao quadrado = "> <VIRGULA> <ID, k> <POT> <NUM_INT, 2> <FECHA_PAR> <PONTO_VIRGULA>
+  54 | <FECHA_CHAVE>
+  55 | <FECHA_CHAVE>
+  57 | <REPITA> <ABRE_CHAVE>
+  58 | <ID, faltas> <ATRIB> <ID, faltas> <MENOS> <NUM_INT, 1> <PONTO_VIRGULA>
+  59 | <FECHA_CHAVE> <ATE> <ABRE_PAR> <ID, faltas> <MENOR_IGUAL> <NUM_INT, 0> <FECHA_PAR> <PONTO_VIRGULA>
+  60 | <FECHA_CHAVE>
+  61 | <EOF>
+
+==============================================================================
+  TABELA DE LEXEMAS E TOKENS
+==============================================================================
++------------------------+---------------+---------------------+-------------+
+| Lexema                 | Token         | Classe              | Ocorrências |
++------------------------+---------------+---------------------+-------------+
+| ate                    | ATE           | Palavra reservada   | 2           |
+| de                     | DE            | Palavra reservada   | 1           |
+| enquanto               | ENQUANTO      | Palavra reservada   | 1           |
+| fixo                   | FIXO          | Palavra reservada   | 1           |
+| funcao                 | FUNCAO        | Palavra reservada   | 3           |
+| leia                   | LEIA          | Palavra reservada   | 1           |
+| mostre                 | MOSTRE        | Palavra reservada   | 5           |
+| para                   | PARA          | Palavra reservada   | 1           |
+| passo                  | PASSO         | Palavra reservada   | 1           |
+| principal              | PRINCIPAL     | Palavra reservada   | 1           |
+| repita                 | REPITA        | Palavra reservada   | 1           |
+| retorne                | RETORNE       | Palavra reservada   | 2           |
+| se                     | SE            | Palavra reservada   | 3           |
+| seja                   | SEJA          | Palavra reservada   | 8           |
+| senao                  | SENAO         | Palavra reservada   | 2           |
+| inteiro                | T_INTEIRO     | Tipo primitivo      | 4           |
+| logico                 | T_LOGICO      | Tipo primitivo      | 2           |
+| real                   | T_REAL        | Tipo primitivo      | 8           |
+| texto                  | T_TEXTO       | Tipo primitivo      | 1           |
+| MEDIA_MINIMA           | ID            | Identificador       | 2           |
+| aprovado               | ID            | Identificador       | 3           |
+| cabecalho              | ID            | Identificador       | 2           |
+| delta                  | ID            | Identificador       | 1           |
+| eh_par                 | ID            | Identificador       | 2           |
+| faltas                 | ID            | Identificador       | 7           |
+| i                      | ID            | Identificador       | 4           |
+| k                      | ID            | Identificador       | 4           |
+| m                      | ID            | Identificador       | 4           |
+| media                  | ID            | Identificador       | 2           |
+| n                      | ID            | Identificador       | 2           |
+| nome                   | ID            | Identificador       | 4           |
+| nota1                  | ID            | Identificador       | 3           |
+| nota2                  | ID            | Identificador       | 5           |
+| p1                     | ID            | Identificador       | 2           |
+| p2                     | ID            | Identificador       | 2           |
+| peso                   | ID            | Identificador       | 3           |
+| falso                  | FALSO         | Literal             | 1           |
+| 0                      | NUM_INT       | Literal             | 3           |
+| 1                      | NUM_INT       | Literal             | 4           |
+| 10                     | NUM_INT       | Literal             | 3           |
+| 2                      | NUM_INT       | Literal             | 7           |
+| 3                      | NUM_INT       | Literal             | 3           |
+| 4                      | NUM_INT       | Literal             | 1           |
+| 10.0                   | NUM_REAL      | Literal             | 1           |
+| 5.0                    | NUM_REAL      | Literal             | 1           |
+| 6.5                    | NUM_REAL      | Literal             | 1           |
+| 7.0                    | NUM_REAL      | Literal             | 1           |
+| " ao quadrado = "      | TEXTO         | Literal             | 1           |
+| " aprovada com media " | TEXTO         | Literal             | 1           |
+| " em recuperacao"      | TEXTO         | Literal             | 1           |
+| " reprovada"           | TEXTO         | Literal             | 1           |
+| "=== Boletim ==="      | TEXTO         | Literal             | 1           |
+| "Ana"                  | TEXTO         | Literal             | 1           |
+| verdadeiro             | VERDADEIRO    | Literal             | 2           |
+| /                      | DIV           | Operador aritmético | 1           |
+| +                      | MAIS          | Operador aritmético | 4           |
+| -                      | MENOS         | Operador aritmético | 3           |
+| %                      | MOD           | Operador aritmético | 2           |
+| *                      | MULT          | Operador aritmético | 3           |
+| ^                      | POT           | Operador aritmético | 3           |
+| !=                     | DIFERENTE     | Operador relacional | 1           |
+| ==                     | IGUAL         | Operador relacional | 2           |
+| >                      | MAIOR         | Operador relacional | 1           |
+| >=                     | MAIOR_IGUAL   | Operador relacional | 2           |
+| <                      | MENOR         | Operador relacional | 1           |
+| <=                     | MENOR_IGUAL   | Operador relacional | 2           |
+| e                      | E             | Operador lógico     | 3           |
+| nao                    | NAO           | Operador lógico     | 2           |
+| ou                     | OU            | Operador lógico     | 1           |
+| =                      | ATRIB         | Atribuição          | 11          |
+| {                      | ABRE_CHAVE    | Delimitador         | 11          |
+| (                      | ABRE_PAR      | Delimitador         | 21          |
+| :                      | DOIS_PONTOS   | Delimitador         | 13          |
+| }                      | FECHA_CHAVE   | Delimitador         | 11          |
+| )                      | FECHA_PAR     | Delimitador         | 21          |
+| ;                      | PONTO_VIRGULA | Delimitador         | 22          |
+| ->                     | SETA          | Delimitador         | 2           |
+| ,                      | VIRGULA       | Delimitador         | 10          |
++------------------------+---------------+---------------------+-------------+
+
++---------------------+--------+
+| Classe de lexema    | Tokens |
++---------------------+--------+
+| Palavra reservada   | 33     |
+| Tipo primitivo      | 15     |
+| Identificador       | 52     |
+| Literal             | 34     |
+| Operador aritmético | 16     |
+| Operador relacional | 9      |
+| Operador lógico     | 6      |
+| Atribuição          | 11     |
+| Delimitador         | 111    |
+| Fim de arquivo      | 1      |
+| TOTAL               | 288    |
++---------------------+--------+
+
+==============================================================================
+  RESULTADO
+==============================================================================
+[OK] Análise léxica concluída: 288 tokens reconhecidos.
+[OK] Análise sintática concluída: o programa está de acordo com a gramática.
+
+==============================================================================
+  ÁRVORE SINTÁTICA
+==============================================================================
+Programa
+├── Constante MEDIA_MINIMA: real
+│   └── Literal real 7.0
+├── Funcao media -> real
+│   ├── Parametros
+│   │   ├── Parametro p1: real
+│   │   ├── Parametro p2: real
+│   │   └── Parametro peso: inteiro
+│   └── Bloco
+│       └── Retorne
+│           └── Binaria '/'
+│               ├── Binaria '+'
+│               │   ├── Variavel p1
+│               │   └── Binaria '*'
+│               │       ├── Variavel p2
+│               │       └── Variavel peso
+│               └── Binaria '+'
+│                   ├── Literal inteiro 1
+│                   └── Variavel peso
+├── Funcao eh_par -> logico
+│   ├── Parametros
+│   │   └── Parametro n: inteiro
+│   └── Bloco
+│       └── Retorne
+│           └── Binaria '=='
+│               ├── Binaria '%'
+│               │   ├── Variavel n
+│               │   └── Literal inteiro 2
+│               └── Literal inteiro 0
+├── Funcao cabecalho
+│   ├── Parametros
+│   └── Bloco
+│       └── Mostre
+│           └── Literal texto "=== Boletim ==="
+└── Principal
+    └── Bloco
+        ├── Declaracao nome: texto
+        │   └── Literal texto "Ana"
+        ├── Declaracao nota1: real
+        │   └── Literal real 6.5
+        ├── Declaracao nota2: real
+        ├── Declaracao faltas: inteiro
+        │   └── Literal inteiro 3
+        ├── Declaracao aprovado: logico
+        │   └── Literal logico falso
+        ├── Leia nota2
+        ├── ComandoChamada
+        │   └── Chamada cabecalho()
+        ├── Declaracao m: real
+        │   └── Chamada media()
+        │       ├── Variavel nota1
+        │       ├── Variavel nota2
+        │       └── Literal inteiro 2
+        ├── Se
+        │   ├── Condicao
+        │   │   └── Binaria 'ou'
+        │   │       ├── Binaria 'e'
+        │   │       │   ├── Binaria '>='
+        │   │       │   │   ├── Variavel m
+        │   │       │   │   └── Variavel MEDIA_MINIMA
+        │   │       │   └── Binaria '<='
+        │   │       │       ├── Variavel faltas
+        │   │       │       └── Literal inteiro 10
+        │   │       └── Binaria '=='
+        │   │           ├── Variavel nota2
+        │   │           └── Literal real 10.0
+        │   ├── Entao
+        │   │   └── Bloco
+        │   │       ├── Atribuicao aprovado =
+        │   │       │   └── Literal logico verdadeiro
+        │   │       └── Mostre
+        │   │           ├── Variavel nome
+        │   │           ├── Literal texto " aprovada com media "
+        │   │           └── Variavel m
+        │   └── Senao
+        │       └── Se
+        │           ├── Condicao
+        │           │   └── Binaria 'e'
+        │           │       ├── Binaria '>='
+        │           │       │   ├── Variavel m
+        │           │       │   └── Literal real 5.0
+        │           │       └── Unaria 'nao'
+        │           │           └── Binaria '>'
+        │           │               ├── Variavel faltas
+        │           │               └── Literal inteiro 10
+        │           ├── Entao
+        │           │   └── Bloco
+        │           │       └── Mostre
+        │           │           ├── Variavel nome
+        │           │           └── Literal texto " em recuperacao"
+        │           └── Senao
+        │               └── Bloco
+        │                   └── Mostre
+        │                       ├── Variavel nome
+        │                       └── Literal texto " reprovada"
+        ├── Declaracao delta: real
+        │   └── Binaria '+'
+        │       ├── Binaria '-'
+        │       │   ├── Binaria '^'
+        │       │   │   ├── Literal inteiro 2
+        │       │   │   └── Binaria '^'
+        │       │   │       ├── Literal inteiro 3
+        │       │   │       └── Literal inteiro 2
+        │       │   └── Binaria '*'
+        │       │       ├── Binaria '*'
+        │       │       │   ├── Literal inteiro 4
+        │       │       │   └── Variavel nota1
+        │       │       └── Unaria '-'
+        │       │           └── Variavel nota2
+        │       └── Binaria '%'
+        │           ├── Variavel faltas
+        │           └── Literal inteiro 2
+        ├── Declaracao i: inteiro
+        │   └── Literal inteiro 0
+        ├── Enquanto
+        │   ├── Condicao
+        │   │   └── Binaria 'e'
+        │   │       ├── Binaria '<'
+        │   │       │   ├── Variavel i
+        │   │       │   └── Literal inteiro 3
+        │   │       └── Unaria 'nao'
+        │   │           └── Variavel aprovado
+        │   └── Bloco
+        │       └── Atribuicao i =
+        │           └── Binaria '+'
+        │               ├── Variavel i
+        │               └── Literal inteiro 1
+        ├── Para k
+        │   ├── De
+        │   │   └── Literal inteiro 1
+        │   ├── Ate
+        │   │   └── Literal inteiro 10
+        │   ├── Passo
+        │   │   └── Literal inteiro 2
+        │   └── Bloco
+        │       └── Se
+        │           ├── Condicao
+        │           │   └── Binaria '!='
+        │           │       ├── Chamada eh_par()
+        │           │       │   └── Variavel k
+        │           │       └── Literal logico verdadeiro
+        │           └── Entao
+        │               └── Bloco
+        │                   └── Mostre
+        │                       ├── Variavel k
+        │                       ├── Literal texto " ao quadrado = "
+        │                       └── Binaria '^'
+        │                           ├── Variavel k
+        │                           └── Literal inteiro 2
+        └── Repita
+            ├── Bloco
+            │   └── Atribuicao faltas =
+            │       └── Binaria '-'
+            │           ├── Variavel faltas
+            │           └── Literal inteiro 1
+            └── Ate
+                └── Binaria '<='
+                    ├── Variavel faltas
+                    └── Literal inteiro 0
