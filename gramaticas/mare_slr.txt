@@ -1,0 +1,58 @@
+# Gramática da linguagem Maré em BNF pura, pronta para análise SLR(1).
+#
+# É a gramática SEM AMBIGUIDADE da etapa 1(b): recursiva à esquerda onde a
+# associatividade é à esquerda (natural em LR, não precisa de fatoração) e
+# aumentada com a produção 0:  programa' -> programa.
+# Formato e convenções iguais aos de mare_ll1.txt.
+
+programa'   -> programa
+
+# ---------------------------------------------------------------- estrutura
+programa    -> itens PRINCIPAL bloco
+itens       -> itens item | ε
+item        -> funcao | declaracao
+funcao      -> FUNCAO ID ABRE_PAR params_opt FECHA_PAR retorno_opt bloco
+params_opt  -> params | ε
+params      -> params VIRGULA param | param
+param       -> ID DOIS_PONTOS tipo
+retorno_opt -> SETA tipo | ε
+tipo        -> T_INTEIRO | T_REAL | T_LOGICO | T_TEXTO
+bloco       -> ABRE_CHAVE comandos FECHA_CHAVE
+comandos    -> comandos comando | ε
+
+# ---------------------------------------------------------------- comandos
+comando     -> declaracao | atribuicao | chamada PONTO_VIRGULA | se | enquanto
+             | para | repita | retorne | mostre | leia
+declaracao  -> SEJA ID DOIS_PONTOS tipo PONTO_VIRGULA
+             | SEJA ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+             | FIXO ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+atribuicao  -> ID ATRIB expr PONTO_VIRGULA
+se          -> SE ABRE_PAR expr FECHA_PAR bloco
+             | SE ABRE_PAR expr FECHA_PAR bloco SENAO se
+             | SE ABRE_PAR expr FECHA_PAR bloco SENAO bloco
+enquanto    -> ENQUANTO ABRE_PAR expr FECHA_PAR bloco
+para        -> PARA ID DE expr ATE expr bloco
+             | PARA ID DE expr ATE expr PASSO expr bloco
+repita      -> REPITA bloco ATE ABRE_PAR expr FECHA_PAR PONTO_VIRGULA
+retorne     -> RETORNE PONTO_VIRGULA | RETORNE expr PONTO_VIRGULA
+mostre      -> MOSTRE ABRE_PAR args FECHA_PAR PONTO_VIRGULA
+leia        -> LEIA ABRE_PAR ID FECHA_PAR PONTO_VIRGULA
+
+# ---------------------------------------------------------------- expressões
+# um não-terminal por nível de precedência (menor -> maior):
+#   ou < e < nao < relacional (não associativo) < + - < * / % < - unário < ^ (direita)
+expr        -> expr_ou
+expr_ou     -> expr_ou OU expr_e | expr_e
+expr_e      -> expr_e E expr_nao | expr_nao
+expr_nao    -> NAO expr_nao | expr_rel
+expr_rel    -> soma op_rel soma | soma
+op_rel      -> IGUAL | DIFERENTE | MENOR | MENOR_IGUAL | MAIOR | MAIOR_IGUAL
+soma        -> soma MAIS termo | soma MENOS termo | termo
+termo       -> termo MULT unario | termo DIV unario | termo MOD unario | unario
+unario      -> MENOS unario | potencia
+potencia    -> primario POT unario | primario
+primario    -> NUM_INT | NUM_REAL | TEXTO | VERDADEIRO | FALSO | ID | chamada
+             | ABRE_PAR expr FECHA_PAR
+chamada     -> ID ABRE_PAR args_opt FECHA_PAR
+args_opt    -> args | ε
+args        -> args VIRGULA expr | expr
