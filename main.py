@@ -4,6 +4,7 @@ import sys
 
 from mare import exibicao
 from mare.erros import mostrar_contexto
+from mare.conversor import ErroConversor, converter_arquivo, gramatica_como_arquivo, relatorio_final
 from mare.first_follow import calcular_first, calcular_follow, tabela_first_follow
 from mare.gramatica import Gramatica
 from mare.lexer import Lexer
@@ -129,6 +130,43 @@ def mostrar_gramaticas(args, saida: Exportador) -> None:
         saida.tabela("Tabela SLR(1): ACTION (s=shift, r=reduce, acc) e GOTO", cab, linhas)
 
 
+def executar_conversor(caminho: str, saida_gramatica: str | None) -> int:
+    """Gerador automático: ambígua -> sem ambiguidade -> sem recursão à esquerda -> fatorada -> LL(1)."""
+    try:
+        conversao = converter_arquivo(caminho)
+    except OSError as e:
+        print(f"Não foi possível abrir '{caminho}': {e}", file=sys.stderr)
+        return 2
+    except ErroConversor as e:
+        print(f"Erro na conversão: {e}", file=sys.stderr)
+        return 2
+    except ValueError as e:
+        print(f"Gramática inválida: {e}", file=sys.stderr)
+        return 2
+
+    for etapa in conversao.etapas:
+        titulo(etapa.titulo)
+        for linha in etapa.explicacao:
+            print(linha)
+        if etapa.explicacao:
+            print()
+        print(etapa.gramatica.formatar(numerar=False))
+        print(f"\n({etapa.gramatica.resumo()})")
+
+    titulo("ETAPA 4 — FIRST/FOLLOW, TABELA LL(1) E PROVA")
+    print(relatorio_final(conversao))
+    print()
+    print(conversao.tabela.tabela_compacta())
+    print(conversao.tabela.resumo())
+    status(conversao.eh_ll1, "A gramática final é LL(1)." if conversao.eh_ll1
+           else "A gramática final NÃO é LL(1).")
+    if saida_gramatica:
+        with open(saida_gramatica, "w", encoding="utf-8") as f:
+            f.write(gramatica_como_arquivo(conversao.final))
+        print(f"Gramática LL(1) gerada gravada em {saida_gramatica}")
+    return 0 if conversao.eh_ll1 else 1
+
+
 def _truncar(texto: str, maximo_linhas: int) -> str:
     """Mostra só as primeiras linhas no terminal e avisa como ver o resto."""
     linhas = texto.splitlines()
@@ -212,6 +250,9 @@ def main() -> int:
     slr.add_argument("--tabela-slr", action="store_true", help="tabela ACTION/GOTO e conflitos")
     slr.add_argument("--slr", action="store_true", help="analisa o arquivo com o SLR(1) e mostra o rastro shift/reduce")
 
+    ap.add_argument("--converter", metavar="GRAMATICA.txt",
+                    help="converte uma gramática ambígua de expressões (com %%left/%%right/%%nonassoc/%%prefix) "
+                         "em LL(1), mostrando cada etapa; com --saida grava a gramática gerada")
     ap.add_argument("--parser", choices=["rd", "ll1", "slr"],
                     help="parser usado na análise sintática: rd (recursivo, padrão), ll1 ou slr")
     ap.add_argument("--saida", metavar="ARQ",
@@ -223,6 +264,9 @@ def main() -> int:
                         args.gramatica_slr, args.itens_lr0, args.tabela_slr]
     opcoes_rastro = [args.ll1, args.slr]
     saida = Exportador(args.saida)
+
+    if args.converter:
+        return executar_conversor(args.converter, args.saida)
 
     # --- opções que só dependem da gramática --------------------------------
     if any(opcoes_gramatica):
