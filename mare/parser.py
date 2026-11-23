@@ -156,6 +156,9 @@ class Parser:
         while not self._verificar(T.EOF):
             inicio = self.pos
             try:
+                if principal is not None and not self._verificar(T.PRINCIPAL):
+                    # A gramática é: { funcao | declaracao } "principal" bloco EOF
+                    raise self._erro("funções e variáveis globais devem vir ANTES do bloco 'principal'")
                 if self._verificar(T.FUNCAO):
                     declaracoes.append(self._funcao())
                 elif self._verificar(T.SEJA, T.FIXO):
