@@ -59,6 +59,9 @@ argumentos  = expr { "," expr } ;
 
 ### Por que a gramática é LL(1) (com um detalhe LL(2))
 
+> Para o analisador LL(1) com tabela, o detalhe LL(2) foi eliminado por fatoração à esquerda e a gramática
+> foi reescrita em BNF pura: ver [`gramatica_ll1.md`](gramatica_ll1.md) (e [`gramatica_slr.md`](gramatica_slr.md) para o SLR(1)).
+
 * Cada comando começa com uma palavra reservada diferente (`seja`, `se`, `enquanto`...),
   então um token de *lookahead* basta para escolher a regra.
 * A única exceção são os comandos que começam com `ID`: `x = ...` (atribuição) e
