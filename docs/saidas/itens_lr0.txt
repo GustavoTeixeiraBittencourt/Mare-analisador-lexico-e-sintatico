@@ -1,0 +1,1793 @@
+# Itens LR(0)
+
+I0:
+    programa' → • programa
+    programa → • itens PRINCIPAL bloco
+    itens → • itens item
+    itens → •
+    goto(I0, programa) = I1
+    goto(I0, itens) = I2
+
+I1:
+    programa' → programa •
+
+I2:
+    programa → itens • PRINCIPAL bloco
+    itens → itens • item
+    item → • funcao
+    item → • declaracao
+    funcao → • FUNCAO ID ABRE_PAR params_opt FECHA_PAR retorno_opt bloco
+    declaracao → • SEJA ID DOIS_PONTOS tipo PONTO_VIRGULA
+    declaracao → • SEJA ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+    declaracao → • FIXO ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+    goto(I2, item) = I3
+    goto(I2, funcao) = I4
+    goto(I2, declaracao) = I5
+    goto(I2, PRINCIPAL) = I6
+    goto(I2, FUNCAO) = I7
+    goto(I2, SEJA) = I8
+    goto(I2, FIXO) = I9
+
+I3:
+    itens → itens item •
+
+I4:
+    item → funcao •
+
+I5:
+    item → declaracao •
+
+I6:
+    programa → itens PRINCIPAL • bloco
+    bloco → • ABRE_CHAVE comandos FECHA_CHAVE
+    goto(I6, bloco) = I10
+    goto(I6, ABRE_CHAVE) = I11
+
+I7:
+    funcao → FUNCAO • ID ABRE_PAR params_opt FECHA_PAR retorno_opt bloco
+    goto(I7, ID) = I12
+
+I8:
+    declaracao → SEJA • ID DOIS_PONTOS tipo PONTO_VIRGULA
+    declaracao → SEJA • ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+    goto(I8, ID) = I13
+
+I9:
+    declaracao → FIXO • ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+    goto(I9, ID) = I14
+
+I10:
+    programa → itens PRINCIPAL bloco •
+
+I11:
+    bloco → ABRE_CHAVE • comandos FECHA_CHAVE
+    comandos → • comandos comando
+    comandos → •
+    goto(I11, comandos) = I15
+
+I12:
+    funcao → FUNCAO ID • ABRE_PAR params_opt FECHA_PAR retorno_opt bloco
+    goto(I12, ABRE_PAR) = I16
+
+I13:
+    declaracao → SEJA ID • DOIS_PONTOS tipo PONTO_VIRGULA
+    declaracao → SEJA ID • DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+    goto(I13, DOIS_PONTOS) = I17
+
+I14:
+    declaracao → FIXO ID • DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+    goto(I14, DOIS_PONTOS) = I18
+
+I15:
+    bloco → ABRE_CHAVE comandos • FECHA_CHAVE
+    comandos → comandos • comando
+    comando → • declaracao
+    comando → • atribuicao
+    comando → • chamada PONTO_VIRGULA
+    comando → • se
+    comando → • enquanto
+    comando → • para
+    comando → • repita
+    comando → • retorne
+    comando → • mostre
+    comando → • leia
+    declaracao → • SEJA ID DOIS_PONTOS tipo PONTO_VIRGULA
+    declaracao → • SEJA ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+    declaracao → • FIXO ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+    atribuicao → • ID ATRIB expr PONTO_VIRGULA
+    se → • SE ABRE_PAR expr FECHA_PAR bloco
+    se → • SE ABRE_PAR expr FECHA_PAR bloco SENAO se
+    se → • SE ABRE_PAR expr FECHA_PAR bloco SENAO bloco
+    enquanto → • ENQUANTO ABRE_PAR expr FECHA_PAR bloco
+    para → • PARA ID DE expr ATE expr bloco
+    para → • PARA ID DE expr ATE expr PASSO expr bloco
+    repita → • REPITA bloco ATE ABRE_PAR expr FECHA_PAR PONTO_VIRGULA
+    retorne → • RETORNE PONTO_VIRGULA
+    retorne → • RETORNE expr PONTO_VIRGULA
+    mostre → • MOSTRE ABRE_PAR args FECHA_PAR PONTO_VIRGULA
+    leia → • LEIA ABRE_PAR ID FECHA_PAR PONTO_VIRGULA
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I15, comando) = I19
+    goto(I15, declaracao) = I20
+    goto(I15, atribuicao) = I21
+    goto(I15, se) = I22
+    goto(I15, enquanto) = I23
+    goto(I15, para) = I24
+    goto(I15, repita) = I25
+    goto(I15, retorne) = I26
+    goto(I15, mostre) = I27
+    goto(I15, leia) = I28
+    goto(I15, chamada) = I29
+    goto(I15, ID) = I30
+    goto(I15, FECHA_CHAVE) = I31
+    goto(I15, SEJA) = I8
+    goto(I15, FIXO) = I9
+    goto(I15, SE) = I32
+    goto(I15, ENQUANTO) = I33
+    goto(I15, PARA) = I34
+    goto(I15, REPITA) = I35
+    goto(I15, RETORNE) = I36
+    goto(I15, MOSTRE) = I37
+    goto(I15, LEIA) = I38
+
+I16:
+    funcao → FUNCAO ID ABRE_PAR • params_opt FECHA_PAR retorno_opt bloco
+    params_opt → • params
+    params_opt → •
+    params → • params VIRGULA param
+    params → • param
+    param → • ID DOIS_PONTOS tipo
+    goto(I16, params_opt) = I39
+    goto(I16, params) = I40
+    goto(I16, param) = I41
+    goto(I16, ID) = I42
+
+I17:
+    declaracao → SEJA ID DOIS_PONTOS • tipo PONTO_VIRGULA
+    declaracao → SEJA ID DOIS_PONTOS • tipo ATRIB expr PONTO_VIRGULA
+    tipo → • T_INTEIRO
+    tipo → • T_REAL
+    tipo → • T_LOGICO
+    tipo → • T_TEXTO
+    goto(I17, tipo) = I43
+    goto(I17, T_INTEIRO) = I44
+    goto(I17, T_REAL) = I45
+    goto(I17, T_LOGICO) = I46
+    goto(I17, T_TEXTO) = I47
+
+I18:
+    declaracao → FIXO ID DOIS_PONTOS • tipo ATRIB expr PONTO_VIRGULA
+    tipo → • T_INTEIRO
+    tipo → • T_REAL
+    tipo → • T_LOGICO
+    tipo → • T_TEXTO
+    goto(I18, tipo) = I48
+    goto(I18, T_INTEIRO) = I44
+    goto(I18, T_REAL) = I45
+    goto(I18, T_LOGICO) = I46
+    goto(I18, T_TEXTO) = I47
+
+I19:
+    comandos → comandos comando •
+
+I20:
+    comando → declaracao •
+
+I21:
+    comando → atribuicao •
+
+I22:
+    comando → se •
+
+I23:
+    comando → enquanto •
+
+I24:
+    comando → para •
+
+I25:
+    comando → repita •
+
+I26:
+    comando → retorne •
+
+I27:
+    comando → mostre •
+
+I28:
+    comando → leia •
+
+I29:
+    comando → chamada • PONTO_VIRGULA
+    goto(I29, PONTO_VIRGULA) = I49
+
+I30:
+    atribuicao → ID • ATRIB expr PONTO_VIRGULA
+    chamada → ID • ABRE_PAR args_opt FECHA_PAR
+    goto(I30, ABRE_PAR) = I50
+    goto(I30, ATRIB) = I51
+
+I31:
+    bloco → ABRE_CHAVE comandos FECHA_CHAVE •
+
+I32:
+    se → SE • ABRE_PAR expr FECHA_PAR bloco
+    se → SE • ABRE_PAR expr FECHA_PAR bloco SENAO se
+    se → SE • ABRE_PAR expr FECHA_PAR bloco SENAO bloco
+    goto(I32, ABRE_PAR) = I52
+
+I33:
+    enquanto → ENQUANTO • ABRE_PAR expr FECHA_PAR bloco
+    goto(I33, ABRE_PAR) = I53
+
+I34:
+    para → PARA • ID DE expr ATE expr bloco
+    para → PARA • ID DE expr ATE expr PASSO expr bloco
+    goto(I34, ID) = I54
+
+I35:
+    repita → REPITA • bloco ATE ABRE_PAR expr FECHA_PAR PONTO_VIRGULA
+    bloco → • ABRE_CHAVE comandos FECHA_CHAVE
+    goto(I35, bloco) = I55
+    goto(I35, ABRE_CHAVE) = I11
+
+I36:
+    retorne → RETORNE • PONTO_VIRGULA
+    retorne → RETORNE • expr PONTO_VIRGULA
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I36, expr) = I56
+    goto(I36, expr_ou) = I57
+    goto(I36, expr_e) = I58
+    goto(I36, expr_nao) = I59
+    goto(I36, expr_rel) = I60
+    goto(I36, soma) = I61
+    goto(I36, termo) = I62
+    goto(I36, unario) = I63
+    goto(I36, potencia) = I64
+    goto(I36, primario) = I65
+    goto(I36, chamada) = I66
+    goto(I36, ID) = I67
+    goto(I36, ABRE_PAR) = I68
+    goto(I36, PONTO_VIRGULA) = I69
+    goto(I36, NAO) = I70
+    goto(I36, MENOS) = I71
+    goto(I36, NUM_INT) = I72
+    goto(I36, NUM_REAL) = I73
+    goto(I36, TEXTO) = I74
+    goto(I36, VERDADEIRO) = I75
+    goto(I36, FALSO) = I76
+
+I37:
+    mostre → MOSTRE • ABRE_PAR args FECHA_PAR PONTO_VIRGULA
+    goto(I37, ABRE_PAR) = I77
+
+I38:
+    leia → LEIA • ABRE_PAR ID FECHA_PAR PONTO_VIRGULA
+    goto(I38, ABRE_PAR) = I78
+
+I39:
+    funcao → FUNCAO ID ABRE_PAR params_opt • FECHA_PAR retorno_opt bloco
+    goto(I39, FECHA_PAR) = I79
+
+I40:
+    params_opt → params •
+    params → params • VIRGULA param
+    goto(I40, VIRGULA) = I80
+
+I41:
+    params → param •
+
+I42:
+    param → ID • DOIS_PONTOS tipo
+    goto(I42, DOIS_PONTOS) = I81
+
+I43:
+    declaracao → SEJA ID DOIS_PONTOS tipo • PONTO_VIRGULA
+    declaracao → SEJA ID DOIS_PONTOS tipo • ATRIB expr PONTO_VIRGULA
+    goto(I43, PONTO_VIRGULA) = I82
+    goto(I43, ATRIB) = I83
+
+I44:
+    tipo → T_INTEIRO •
+
+I45:
+    tipo → T_REAL •
+
+I46:
+    tipo → T_LOGICO •
+
+I47:
+    tipo → T_TEXTO •
+
+I48:
+    declaracao → FIXO ID DOIS_PONTOS tipo • ATRIB expr PONTO_VIRGULA
+    goto(I48, ATRIB) = I84
+
+I49:
+    comando → chamada PONTO_VIRGULA •
+
+I50:
+    chamada → ID ABRE_PAR • args_opt FECHA_PAR
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    args_opt → • args
+    args_opt → •
+    args → • args VIRGULA expr
+    args → • expr
+    goto(I50, expr) = I85
+    goto(I50, expr_ou) = I57
+    goto(I50, expr_e) = I58
+    goto(I50, expr_nao) = I59
+    goto(I50, expr_rel) = I60
+    goto(I50, soma) = I61
+    goto(I50, termo) = I62
+    goto(I50, unario) = I63
+    goto(I50, potencia) = I64
+    goto(I50, primario) = I65
+    goto(I50, chamada) = I66
+    goto(I50, args_opt) = I86
+    goto(I50, args) = I87
+    goto(I50, ID) = I67
+    goto(I50, ABRE_PAR) = I68
+    goto(I50, NAO) = I70
+    goto(I50, MENOS) = I71
+    goto(I50, NUM_INT) = I72
+    goto(I50, NUM_REAL) = I73
+    goto(I50, TEXTO) = I74
+    goto(I50, VERDADEIRO) = I75
+    goto(I50, FALSO) = I76
+
+I51:
+    atribuicao → ID ATRIB • expr PONTO_VIRGULA
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I51, expr) = I88
+    goto(I51, expr_ou) = I57
+    goto(I51, expr_e) = I58
+    goto(I51, expr_nao) = I59
+    goto(I51, expr_rel) = I60
+    goto(I51, soma) = I61
+    goto(I51, termo) = I62
+    goto(I51, unario) = I63
+    goto(I51, potencia) = I64
+    goto(I51, primario) = I65
+    goto(I51, chamada) = I66
+    goto(I51, ID) = I67
+    goto(I51, ABRE_PAR) = I68
+    goto(I51, NAO) = I70
+    goto(I51, MENOS) = I71
+    goto(I51, NUM_INT) = I72
+    goto(I51, NUM_REAL) = I73
+    goto(I51, TEXTO) = I74
+    goto(I51, VERDADEIRO) = I75
+    goto(I51, FALSO) = I76
+
+I52:
+    se → SE ABRE_PAR • expr FECHA_PAR bloco
+    se → SE ABRE_PAR • expr FECHA_PAR bloco SENAO se
+    se → SE ABRE_PAR • expr FECHA_PAR bloco SENAO bloco
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I52, expr) = I89
+    goto(I52, expr_ou) = I57
+    goto(I52, expr_e) = I58
+    goto(I52, expr_nao) = I59
+    goto(I52, expr_rel) = I60
+    goto(I52, soma) = I61
+    goto(I52, termo) = I62
+    goto(I52, unario) = I63
+    goto(I52, potencia) = I64
+    goto(I52, primario) = I65
+    goto(I52, chamada) = I66
+    goto(I52, ID) = I67
+    goto(I52, ABRE_PAR) = I68
+    goto(I52, NAO) = I70
+    goto(I52, MENOS) = I71
+    goto(I52, NUM_INT) = I72
+    goto(I52, NUM_REAL) = I73
+    goto(I52, TEXTO) = I74
+    goto(I52, VERDADEIRO) = I75
+    goto(I52, FALSO) = I76
+
+I53:
+    enquanto → ENQUANTO ABRE_PAR • expr FECHA_PAR bloco
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I53, expr) = I90
+    goto(I53, expr_ou) = I57
+    goto(I53, expr_e) = I58
+    goto(I53, expr_nao) = I59
+    goto(I53, expr_rel) = I60
+    goto(I53, soma) = I61
+    goto(I53, termo) = I62
+    goto(I53, unario) = I63
+    goto(I53, potencia) = I64
+    goto(I53, primario) = I65
+    goto(I53, chamada) = I66
+    goto(I53, ID) = I67
+    goto(I53, ABRE_PAR) = I68
+    goto(I53, NAO) = I70
+    goto(I53, MENOS) = I71
+    goto(I53, NUM_INT) = I72
+    goto(I53, NUM_REAL) = I73
+    goto(I53, TEXTO) = I74
+    goto(I53, VERDADEIRO) = I75
+    goto(I53, FALSO) = I76
+
+I54:
+    para → PARA ID • DE expr ATE expr bloco
+    para → PARA ID • DE expr ATE expr PASSO expr bloco
+    goto(I54, DE) = I91
+
+I55:
+    repita → REPITA bloco • ATE ABRE_PAR expr FECHA_PAR PONTO_VIRGULA
+    goto(I55, ATE) = I92
+
+I56:
+    retorne → RETORNE expr • PONTO_VIRGULA
+    goto(I56, PONTO_VIRGULA) = I93
+
+I57:
+    expr → expr_ou •
+    expr_ou → expr_ou • OU expr_e
+    goto(I57, OU) = I94
+
+I58:
+    expr_ou → expr_e •
+    expr_e → expr_e • E expr_nao
+    goto(I58, E) = I95
+
+I59:
+    expr_e → expr_nao •
+
+I60:
+    expr_nao → expr_rel •
+
+I61:
+    expr_rel → soma • op_rel soma
+    expr_rel → soma •
+    soma → soma • MAIS termo
+    soma → soma • MENOS termo
+    op_rel → • IGUAL
+    op_rel → • DIFERENTE
+    op_rel → • MENOR
+    op_rel → • MENOR_IGUAL
+    op_rel → • MAIOR
+    op_rel → • MAIOR_IGUAL
+    goto(I61, op_rel) = I96
+    goto(I61, IGUAL) = I97
+    goto(I61, DIFERENTE) = I98
+    goto(I61, MENOR) = I99
+    goto(I61, MENOR_IGUAL) = I100
+    goto(I61, MAIOR) = I101
+    goto(I61, MAIOR_IGUAL) = I102
+    goto(I61, MAIS) = I103
+    goto(I61, MENOS) = I104
+
+I62:
+    soma → termo •
+    termo → termo • MULT unario
+    termo → termo • DIV unario
+    termo → termo • MOD unario
+    goto(I62, MULT) = I105
+    goto(I62, DIV) = I106
+    goto(I62, MOD) = I107
+
+I63:
+    termo → unario •
+
+I64:
+    unario → potencia •
+
+I65:
+    potencia → primario • POT unario
+    potencia → primario •
+    goto(I65, POT) = I108
+
+I66:
+    primario → chamada •
+
+I67:
+    primario → ID •
+    chamada → ID • ABRE_PAR args_opt FECHA_PAR
+    goto(I67, ABRE_PAR) = I50
+
+I68:
+    primario → ABRE_PAR • expr FECHA_PAR
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I68, expr) = I109
+    goto(I68, expr_ou) = I57
+    goto(I68, expr_e) = I58
+    goto(I68, expr_nao) = I59
+    goto(I68, expr_rel) = I60
+    goto(I68, soma) = I61
+    goto(I68, termo) = I62
+    goto(I68, unario) = I63
+    goto(I68, potencia) = I64
+    goto(I68, primario) = I65
+    goto(I68, chamada) = I66
+    goto(I68, ID) = I67
+    goto(I68, ABRE_PAR) = I68
+    goto(I68, NAO) = I70
+    goto(I68, MENOS) = I71
+    goto(I68, NUM_INT) = I72
+    goto(I68, NUM_REAL) = I73
+    goto(I68, TEXTO) = I74
+    goto(I68, VERDADEIRO) = I75
+    goto(I68, FALSO) = I76
+
+I69:
+    retorne → RETORNE PONTO_VIRGULA •
+
+I70:
+    expr_nao → NAO • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I70, expr_nao) = I110
+    goto(I70, expr_rel) = I60
+    goto(I70, soma) = I61
+    goto(I70, termo) = I62
+    goto(I70, unario) = I63
+    goto(I70, potencia) = I64
+    goto(I70, primario) = I65
+    goto(I70, chamada) = I66
+    goto(I70, ID) = I67
+    goto(I70, ABRE_PAR) = I68
+    goto(I70, NAO) = I70
+    goto(I70, MENOS) = I71
+    goto(I70, NUM_INT) = I72
+    goto(I70, NUM_REAL) = I73
+    goto(I70, TEXTO) = I74
+    goto(I70, VERDADEIRO) = I75
+    goto(I70, FALSO) = I76
+
+I71:
+    unario → MENOS • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I71, unario) = I111
+    goto(I71, potencia) = I64
+    goto(I71, primario) = I65
+    goto(I71, chamada) = I66
+    goto(I71, ID) = I67
+    goto(I71, ABRE_PAR) = I68
+    goto(I71, MENOS) = I71
+    goto(I71, NUM_INT) = I72
+    goto(I71, NUM_REAL) = I73
+    goto(I71, TEXTO) = I74
+    goto(I71, VERDADEIRO) = I75
+    goto(I71, FALSO) = I76
+
+I72:
+    primario → NUM_INT •
+
+I73:
+    primario → NUM_REAL •
+
+I74:
+    primario → TEXTO •
+
+I75:
+    primario → VERDADEIRO •
+
+I76:
+    primario → FALSO •
+
+I77:
+    mostre → MOSTRE ABRE_PAR • args FECHA_PAR PONTO_VIRGULA
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    args → • args VIRGULA expr
+    args → • expr
+    goto(I77, expr) = I85
+    goto(I77, expr_ou) = I57
+    goto(I77, expr_e) = I58
+    goto(I77, expr_nao) = I59
+    goto(I77, expr_rel) = I60
+    goto(I77, soma) = I61
+    goto(I77, termo) = I62
+    goto(I77, unario) = I63
+    goto(I77, potencia) = I64
+    goto(I77, primario) = I65
+    goto(I77, chamada) = I66
+    goto(I77, args) = I112
+    goto(I77, ID) = I67
+    goto(I77, ABRE_PAR) = I68
+    goto(I77, NAO) = I70
+    goto(I77, MENOS) = I71
+    goto(I77, NUM_INT) = I72
+    goto(I77, NUM_REAL) = I73
+    goto(I77, TEXTO) = I74
+    goto(I77, VERDADEIRO) = I75
+    goto(I77, FALSO) = I76
+
+I78:
+    leia → LEIA ABRE_PAR • ID FECHA_PAR PONTO_VIRGULA
+    goto(I78, ID) = I113
+
+I79:
+    funcao → FUNCAO ID ABRE_PAR params_opt FECHA_PAR • retorno_opt bloco
+    retorno_opt → • SETA tipo
+    retorno_opt → •
+    goto(I79, retorno_opt) = I114
+    goto(I79, SETA) = I115
+
+I80:
+    params → params VIRGULA • param
+    param → • ID DOIS_PONTOS tipo
+    goto(I80, param) = I116
+    goto(I80, ID) = I42
+
+I81:
+    param → ID DOIS_PONTOS • tipo
+    tipo → • T_INTEIRO
+    tipo → • T_REAL
+    tipo → • T_LOGICO
+    tipo → • T_TEXTO
+    goto(I81, tipo) = I117
+    goto(I81, T_INTEIRO) = I44
+    goto(I81, T_REAL) = I45
+    goto(I81, T_LOGICO) = I46
+    goto(I81, T_TEXTO) = I47
+
+I82:
+    declaracao → SEJA ID DOIS_PONTOS tipo PONTO_VIRGULA •
+
+I83:
+    declaracao → SEJA ID DOIS_PONTOS tipo ATRIB • expr PONTO_VIRGULA
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I83, expr) = I118
+    goto(I83, expr_ou) = I57
+    goto(I83, expr_e) = I58
+    goto(I83, expr_nao) = I59
+    goto(I83, expr_rel) = I60
+    goto(I83, soma) = I61
+    goto(I83, termo) = I62
+    goto(I83, unario) = I63
+    goto(I83, potencia) = I64
+    goto(I83, primario) = I65
+    goto(I83, chamada) = I66
+    goto(I83, ID) = I67
+    goto(I83, ABRE_PAR) = I68
+    goto(I83, NAO) = I70
+    goto(I83, MENOS) = I71
+    goto(I83, NUM_INT) = I72
+    goto(I83, NUM_REAL) = I73
+    goto(I83, TEXTO) = I74
+    goto(I83, VERDADEIRO) = I75
+    goto(I83, FALSO) = I76
+
+I84:
+    declaracao → FIXO ID DOIS_PONTOS tipo ATRIB • expr PONTO_VIRGULA
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I84, expr) = I119
+    goto(I84, expr_ou) = I57
+    goto(I84, expr_e) = I58
+    goto(I84, expr_nao) = I59
+    goto(I84, expr_rel) = I60
+    goto(I84, soma) = I61
+    goto(I84, termo) = I62
+    goto(I84, unario) = I63
+    goto(I84, potencia) = I64
+    goto(I84, primario) = I65
+    goto(I84, chamada) = I66
+    goto(I84, ID) = I67
+    goto(I84, ABRE_PAR) = I68
+    goto(I84, NAO) = I70
+    goto(I84, MENOS) = I71
+    goto(I84, NUM_INT) = I72
+    goto(I84, NUM_REAL) = I73
+    goto(I84, TEXTO) = I74
+    goto(I84, VERDADEIRO) = I75
+    goto(I84, FALSO) = I76
+
+I85:
+    args → expr •
+
+I86:
+    chamada → ID ABRE_PAR args_opt • FECHA_PAR
+    goto(I86, FECHA_PAR) = I120
+
+I87:
+    args_opt → args •
+    args → args • VIRGULA expr
+    goto(I87, VIRGULA) = I121
+
+I88:
+    atribuicao → ID ATRIB expr • PONTO_VIRGULA
+    goto(I88, PONTO_VIRGULA) = I122
+
+I89:
+    se → SE ABRE_PAR expr • FECHA_PAR bloco
+    se → SE ABRE_PAR expr • FECHA_PAR bloco SENAO se
+    se → SE ABRE_PAR expr • FECHA_PAR bloco SENAO bloco
+    goto(I89, FECHA_PAR) = I123
+
+I90:
+    enquanto → ENQUANTO ABRE_PAR expr • FECHA_PAR bloco
+    goto(I90, FECHA_PAR) = I124
+
+I91:
+    para → PARA ID DE • expr ATE expr bloco
+    para → PARA ID DE • expr ATE expr PASSO expr bloco
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I91, expr) = I125
+    goto(I91, expr_ou) = I57
+    goto(I91, expr_e) = I58
+    goto(I91, expr_nao) = I59
+    goto(I91, expr_rel) = I60
+    goto(I91, soma) = I61
+    goto(I91, termo) = I62
+    goto(I91, unario) = I63
+    goto(I91, potencia) = I64
+    goto(I91, primario) = I65
+    goto(I91, chamada) = I66
+    goto(I91, ID) = I67
+    goto(I91, ABRE_PAR) = I68
+    goto(I91, NAO) = I70
+    goto(I91, MENOS) = I71
+    goto(I91, NUM_INT) = I72
+    goto(I91, NUM_REAL) = I73
+    goto(I91, TEXTO) = I74
+    goto(I91, VERDADEIRO) = I75
+    goto(I91, FALSO) = I76
+
+I92:
+    repita → REPITA bloco ATE • ABRE_PAR expr FECHA_PAR PONTO_VIRGULA
+    goto(I92, ABRE_PAR) = I126
+
+I93:
+    retorne → RETORNE expr PONTO_VIRGULA •
+
+I94:
+    expr_ou → expr_ou OU • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I94, expr_e) = I127
+    goto(I94, expr_nao) = I59
+    goto(I94, expr_rel) = I60
+    goto(I94, soma) = I61
+    goto(I94, termo) = I62
+    goto(I94, unario) = I63
+    goto(I94, potencia) = I64
+    goto(I94, primario) = I65
+    goto(I94, chamada) = I66
+    goto(I94, ID) = I67
+    goto(I94, ABRE_PAR) = I68
+    goto(I94, NAO) = I70
+    goto(I94, MENOS) = I71
+    goto(I94, NUM_INT) = I72
+    goto(I94, NUM_REAL) = I73
+    goto(I94, TEXTO) = I74
+    goto(I94, VERDADEIRO) = I75
+    goto(I94, FALSO) = I76
+
+I95:
+    expr_e → expr_e E • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I95, expr_nao) = I128
+    goto(I95, expr_rel) = I60
+    goto(I95, soma) = I61
+    goto(I95, termo) = I62
+    goto(I95, unario) = I63
+    goto(I95, potencia) = I64
+    goto(I95, primario) = I65
+    goto(I95, chamada) = I66
+    goto(I95, ID) = I67
+    goto(I95, ABRE_PAR) = I68
+    goto(I95, NAO) = I70
+    goto(I95, MENOS) = I71
+    goto(I95, NUM_INT) = I72
+    goto(I95, NUM_REAL) = I73
+    goto(I95, TEXTO) = I74
+    goto(I95, VERDADEIRO) = I75
+    goto(I95, FALSO) = I76
+
+I96:
+    expr_rel → soma op_rel • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I96, soma) = I129
+    goto(I96, termo) = I62
+    goto(I96, unario) = I63
+    goto(I96, potencia) = I64
+    goto(I96, primario) = I65
+    goto(I96, chamada) = I66
+    goto(I96, ID) = I67
+    goto(I96, ABRE_PAR) = I68
+    goto(I96, MENOS) = I71
+    goto(I96, NUM_INT) = I72
+    goto(I96, NUM_REAL) = I73
+    goto(I96, TEXTO) = I74
+    goto(I96, VERDADEIRO) = I75
+    goto(I96, FALSO) = I76
+
+I97:
+    op_rel → IGUAL •
+
+I98:
+    op_rel → DIFERENTE •
+
+I99:
+    op_rel → MENOR •
+
+I100:
+    op_rel → MENOR_IGUAL •
+
+I101:
+    op_rel → MAIOR •
+
+I102:
+    op_rel → MAIOR_IGUAL •
+
+I103:
+    soma → soma MAIS • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I103, termo) = I130
+    goto(I103, unario) = I63
+    goto(I103, potencia) = I64
+    goto(I103, primario) = I65
+    goto(I103, chamada) = I66
+    goto(I103, ID) = I67
+    goto(I103, ABRE_PAR) = I68
+    goto(I103, MENOS) = I71
+    goto(I103, NUM_INT) = I72
+    goto(I103, NUM_REAL) = I73
+    goto(I103, TEXTO) = I74
+    goto(I103, VERDADEIRO) = I75
+    goto(I103, FALSO) = I76
+
+I104:
+    soma → soma MENOS • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I104, termo) = I131
+    goto(I104, unario) = I63
+    goto(I104, potencia) = I64
+    goto(I104, primario) = I65
+    goto(I104, chamada) = I66
+    goto(I104, ID) = I67
+    goto(I104, ABRE_PAR) = I68
+    goto(I104, MENOS) = I71
+    goto(I104, NUM_INT) = I72
+    goto(I104, NUM_REAL) = I73
+    goto(I104, TEXTO) = I74
+    goto(I104, VERDADEIRO) = I75
+    goto(I104, FALSO) = I76
+
+I105:
+    termo → termo MULT • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I105, unario) = I132
+    goto(I105, potencia) = I64
+    goto(I105, primario) = I65
+    goto(I105, chamada) = I66
+    goto(I105, ID) = I67
+    goto(I105, ABRE_PAR) = I68
+    goto(I105, MENOS) = I71
+    goto(I105, NUM_INT) = I72
+    goto(I105, NUM_REAL) = I73
+    goto(I105, TEXTO) = I74
+    goto(I105, VERDADEIRO) = I75
+    goto(I105, FALSO) = I76
+
+I106:
+    termo → termo DIV • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I106, unario) = I133
+    goto(I106, potencia) = I64
+    goto(I106, primario) = I65
+    goto(I106, chamada) = I66
+    goto(I106, ID) = I67
+    goto(I106, ABRE_PAR) = I68
+    goto(I106, MENOS) = I71
+    goto(I106, NUM_INT) = I72
+    goto(I106, NUM_REAL) = I73
+    goto(I106, TEXTO) = I74
+    goto(I106, VERDADEIRO) = I75
+    goto(I106, FALSO) = I76
+
+I107:
+    termo → termo MOD • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I107, unario) = I134
+    goto(I107, potencia) = I64
+    goto(I107, primario) = I65
+    goto(I107, chamada) = I66
+    goto(I107, ID) = I67
+    goto(I107, ABRE_PAR) = I68
+    goto(I107, MENOS) = I71
+    goto(I107, NUM_INT) = I72
+    goto(I107, NUM_REAL) = I73
+    goto(I107, TEXTO) = I74
+    goto(I107, VERDADEIRO) = I75
+    goto(I107, FALSO) = I76
+
+I108:
+    potencia → primario POT • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I108, unario) = I135
+    goto(I108, potencia) = I64
+    goto(I108, primario) = I65
+    goto(I108, chamada) = I66
+    goto(I108, ID) = I67
+    goto(I108, ABRE_PAR) = I68
+    goto(I108, MENOS) = I71
+    goto(I108, NUM_INT) = I72
+    goto(I108, NUM_REAL) = I73
+    goto(I108, TEXTO) = I74
+    goto(I108, VERDADEIRO) = I75
+    goto(I108, FALSO) = I76
+
+I109:
+    primario → ABRE_PAR expr • FECHA_PAR
+    goto(I109, FECHA_PAR) = I136
+
+I110:
+    expr_nao → NAO expr_nao •
+
+I111:
+    unario → MENOS unario •
+
+I112:
+    mostre → MOSTRE ABRE_PAR args • FECHA_PAR PONTO_VIRGULA
+    args → args • VIRGULA expr
+    goto(I112, FECHA_PAR) = I137
+    goto(I112, VIRGULA) = I121
+
+I113:
+    leia → LEIA ABRE_PAR ID • FECHA_PAR PONTO_VIRGULA
+    goto(I113, FECHA_PAR) = I138
+
+I114:
+    funcao → FUNCAO ID ABRE_PAR params_opt FECHA_PAR retorno_opt • bloco
+    bloco → • ABRE_CHAVE comandos FECHA_CHAVE
+    goto(I114, bloco) = I139
+    goto(I114, ABRE_CHAVE) = I11
+
+I115:
+    retorno_opt → SETA • tipo
+    tipo → • T_INTEIRO
+    tipo → • T_REAL
+    tipo → • T_LOGICO
+    tipo → • T_TEXTO
+    goto(I115, tipo) = I140
+    goto(I115, T_INTEIRO) = I44
+    goto(I115, T_REAL) = I45
+    goto(I115, T_LOGICO) = I46
+    goto(I115, T_TEXTO) = I47
+
+I116:
+    params → params VIRGULA param •
+
+I117:
+    param → ID DOIS_PONTOS tipo •
+
+I118:
+    declaracao → SEJA ID DOIS_PONTOS tipo ATRIB expr • PONTO_VIRGULA
+    goto(I118, PONTO_VIRGULA) = I141
+
+I119:
+    declaracao → FIXO ID DOIS_PONTOS tipo ATRIB expr • PONTO_VIRGULA
+    goto(I119, PONTO_VIRGULA) = I142
+
+I120:
+    chamada → ID ABRE_PAR args_opt FECHA_PAR •
+
+I121:
+    args → args VIRGULA • expr
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I121, expr) = I143
+    goto(I121, expr_ou) = I57
+    goto(I121, expr_e) = I58
+    goto(I121, expr_nao) = I59
+    goto(I121, expr_rel) = I60
+    goto(I121, soma) = I61
+    goto(I121, termo) = I62
+    goto(I121, unario) = I63
+    goto(I121, potencia) = I64
+    goto(I121, primario) = I65
+    goto(I121, chamada) = I66
+    goto(I121, ID) = I67
+    goto(I121, ABRE_PAR) = I68
+    goto(I121, NAO) = I70
+    goto(I121, MENOS) = I71
+    goto(I121, NUM_INT) = I72
+    goto(I121, NUM_REAL) = I73
+    goto(I121, TEXTO) = I74
+    goto(I121, VERDADEIRO) = I75
+    goto(I121, FALSO) = I76
+
+I122:
+    atribuicao → ID ATRIB expr PONTO_VIRGULA •
+
+I123:
+    se → SE ABRE_PAR expr FECHA_PAR • bloco
+    se → SE ABRE_PAR expr FECHA_PAR • bloco SENAO se
+    se → SE ABRE_PAR expr FECHA_PAR • bloco SENAO bloco
+    bloco → • ABRE_CHAVE comandos FECHA_CHAVE
+    goto(I123, bloco) = I144
+    goto(I123, ABRE_CHAVE) = I11
+
+I124:
+    enquanto → ENQUANTO ABRE_PAR expr FECHA_PAR • bloco
+    bloco → • ABRE_CHAVE comandos FECHA_CHAVE
+    goto(I124, bloco) = I145
+    goto(I124, ABRE_CHAVE) = I11
+
+I125:
+    para → PARA ID DE expr • ATE expr bloco
+    para → PARA ID DE expr • ATE expr PASSO expr bloco
+    goto(I125, ATE) = I146
+
+I126:
+    repita → REPITA bloco ATE ABRE_PAR • expr FECHA_PAR PONTO_VIRGULA
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I126, expr) = I147
+    goto(I126, expr_ou) = I57
+    goto(I126, expr_e) = I58
+    goto(I126, expr_nao) = I59
+    goto(I126, expr_rel) = I60
+    goto(I126, soma) = I61
+    goto(I126, termo) = I62
+    goto(I126, unario) = I63
+    goto(I126, potencia) = I64
+    goto(I126, primario) = I65
+    goto(I126, chamada) = I66
+    goto(I126, ID) = I67
+    goto(I126, ABRE_PAR) = I68
+    goto(I126, NAO) = I70
+    goto(I126, MENOS) = I71
+    goto(I126, NUM_INT) = I72
+    goto(I126, NUM_REAL) = I73
+    goto(I126, TEXTO) = I74
+    goto(I126, VERDADEIRO) = I75
+    goto(I126, FALSO) = I76
+
+I127:
+    expr_ou → expr_ou OU expr_e •
+    expr_e → expr_e • E expr_nao
+    goto(I127, E) = I95
+
+I128:
+    expr_e → expr_e E expr_nao •
+
+I129:
+    expr_rel → soma op_rel soma •
+    soma → soma • MAIS termo
+    soma → soma • MENOS termo
+    goto(I129, MAIS) = I103
+    goto(I129, MENOS) = I104
+
+I130:
+    soma → soma MAIS termo •
+    termo → termo • MULT unario
+    termo → termo • DIV unario
+    termo → termo • MOD unario
+    goto(I130, MULT) = I105
+    goto(I130, DIV) = I106
+    goto(I130, MOD) = I107
+
+I131:
+    soma → soma MENOS termo •
+    termo → termo • MULT unario
+    termo → termo • DIV unario
+    termo → termo • MOD unario
+    goto(I131, MULT) = I105
+    goto(I131, DIV) = I106
+    goto(I131, MOD) = I107
+
+I132:
+    termo → termo MULT unario •
+
+I133:
+    termo → termo DIV unario •
+
+I134:
+    termo → termo MOD unario •
+
+I135:
+    potencia → primario POT unario •
+
+I136:
+    primario → ABRE_PAR expr FECHA_PAR •
+
+I137:
+    mostre → MOSTRE ABRE_PAR args FECHA_PAR • PONTO_VIRGULA
+    goto(I137, PONTO_VIRGULA) = I148
+
+I138:
+    leia → LEIA ABRE_PAR ID FECHA_PAR • PONTO_VIRGULA
+    goto(I138, PONTO_VIRGULA) = I149
+
+I139:
+    funcao → FUNCAO ID ABRE_PAR params_opt FECHA_PAR retorno_opt bloco •
+
+I140:
+    retorno_opt → SETA tipo •
+
+I141:
+    declaracao → SEJA ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA •
+
+I142:
+    declaracao → FIXO ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA •
+
+I143:
+    args → args VIRGULA expr •
+
+I144:
+    se → SE ABRE_PAR expr FECHA_PAR bloco •
+    se → SE ABRE_PAR expr FECHA_PAR bloco • SENAO se
+    se → SE ABRE_PAR expr FECHA_PAR bloco • SENAO bloco
+    goto(I144, SENAO) = I150
+
+I145:
+    enquanto → ENQUANTO ABRE_PAR expr FECHA_PAR bloco •
+
+I146:
+    para → PARA ID DE expr ATE • expr bloco
+    para → PARA ID DE expr ATE • expr PASSO expr bloco
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I146, expr) = I151
+    goto(I146, expr_ou) = I57
+    goto(I146, expr_e) = I58
+    goto(I146, expr_nao) = I59
+    goto(I146, expr_rel) = I60
+    goto(I146, soma) = I61
+    goto(I146, termo) = I62
+    goto(I146, unario) = I63
+    goto(I146, potencia) = I64
+    goto(I146, primario) = I65
+    goto(I146, chamada) = I66
+    goto(I146, ID) = I67
+    goto(I146, ABRE_PAR) = I68
+    goto(I146, NAO) = I70
+    goto(I146, MENOS) = I71
+    goto(I146, NUM_INT) = I72
+    goto(I146, NUM_REAL) = I73
+    goto(I146, TEXTO) = I74
+    goto(I146, VERDADEIRO) = I75
+    goto(I146, FALSO) = I76
+
+I147:
+    repita → REPITA bloco ATE ABRE_PAR expr • FECHA_PAR PONTO_VIRGULA
+    goto(I147, FECHA_PAR) = I152
+
+I148:
+    mostre → MOSTRE ABRE_PAR args FECHA_PAR PONTO_VIRGULA •
+
+I149:
+    leia → LEIA ABRE_PAR ID FECHA_PAR PONTO_VIRGULA •
+
+I150:
+    se → SE ABRE_PAR expr FECHA_PAR bloco SENAO • se
+    se → SE ABRE_PAR expr FECHA_PAR bloco SENAO • bloco
+    bloco → • ABRE_CHAVE comandos FECHA_CHAVE
+    se → • SE ABRE_PAR expr FECHA_PAR bloco
+    se → • SE ABRE_PAR expr FECHA_PAR bloco SENAO se
+    se → • SE ABRE_PAR expr FECHA_PAR bloco SENAO bloco
+    goto(I150, bloco) = I153
+    goto(I150, se) = I154
+    goto(I150, ABRE_CHAVE) = I11
+    goto(I150, SE) = I32
+
+I151:
+    para → PARA ID DE expr ATE expr • bloco
+    para → PARA ID DE expr ATE expr • PASSO expr bloco
+    bloco → • ABRE_CHAVE comandos FECHA_CHAVE
+    goto(I151, bloco) = I155
+    goto(I151, ABRE_CHAVE) = I11
+    goto(I151, PASSO) = I156
+
+I152:
+    repita → REPITA bloco ATE ABRE_PAR expr FECHA_PAR • PONTO_VIRGULA
+    goto(I152, PONTO_VIRGULA) = I157
+
+I153:
+    se → SE ABRE_PAR expr FECHA_PAR bloco SENAO bloco •
+
+I154:
+    se → SE ABRE_PAR expr FECHA_PAR bloco SENAO se •
+
+I155:
+    para → PARA ID DE expr ATE expr bloco •
+
+I156:
+    para → PARA ID DE expr ATE expr PASSO • expr bloco
+    expr → • expr_ou
+    expr_ou → • expr_ou OU expr_e
+    expr_ou → • expr_e
+    expr_e → • expr_e E expr_nao
+    expr_e → • expr_nao
+    expr_nao → • NAO expr_nao
+    expr_nao → • expr_rel
+    expr_rel → • soma op_rel soma
+    expr_rel → • soma
+    soma → • soma MAIS termo
+    soma → • soma MENOS termo
+    soma → • termo
+    termo → • termo MULT unario
+    termo → • termo DIV unario
+    termo → • termo MOD unario
+    termo → • unario
+    unario → • MENOS unario
+    unario → • potencia
+    potencia → • primario POT unario
+    potencia → • primario
+    primario → • NUM_INT
+    primario → • NUM_REAL
+    primario → • TEXTO
+    primario → • VERDADEIRO
+    primario → • FALSO
+    primario → • ID
+    primario → • chamada
+    primario → • ABRE_PAR expr FECHA_PAR
+    chamada → • ID ABRE_PAR args_opt FECHA_PAR
+    goto(I156, expr) = I158
+    goto(I156, expr_ou) = I57
+    goto(I156, expr_e) = I58
+    goto(I156, expr_nao) = I59
+    goto(I156, expr_rel) = I60
+    goto(I156, soma) = I61
+    goto(I156, termo) = I62
+    goto(I156, unario) = I63
+    goto(I156, potencia) = I64
+    goto(I156, primario) = I65
+    goto(I156, chamada) = I66
+    goto(I156, ID) = I67
+    goto(I156, ABRE_PAR) = I68
+    goto(I156, NAO) = I70
+    goto(I156, MENOS) = I71
+    goto(I156, NUM_INT) = I72
+    goto(I156, NUM_REAL) = I73
+    goto(I156, TEXTO) = I74
+    goto(I156, VERDADEIRO) = I75
+    goto(I156, FALSO) = I76
+
+I157:
+    repita → REPITA bloco ATE ABRE_PAR expr FECHA_PAR PONTO_VIRGULA •
+
+I158:
+    para → PARA ID DE expr ATE expr PASSO expr • bloco
+    bloco → • ABRE_CHAVE comandos FECHA_CHAVE
+    goto(I158, bloco) = I159
+    goto(I158, ABRE_CHAVE) = I11
+
+I159:
+    para → PARA ID DE expr ATE expr PASSO expr bloco •
