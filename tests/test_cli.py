@@ -60,9 +60,7 @@ class TestCLI(unittest.TestCase):
     def test_converter_gramatica_invalida_da_erro(self):
         with tempfile.TemporaryDirectory() as pasta:
             ruim = pathlib.Path(pasta) / "ruim.txt"
-            ruim.write_text("%left +
-E -> E + E | E * E | id
-", encoding="utf-8")
+            ruim.write_text("%left +\nE -> E + E | E * E | id\n", encoding="utf-8")
             self.assertEqual(rodar("--converter", str(ruim)).returncode, 2)
 
     def test_sem_argumentos_pede_arquivo(self):
