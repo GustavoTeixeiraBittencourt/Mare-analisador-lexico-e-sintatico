@@ -1,0 +1,5 @@
+# Exemplo curto para a demonstração em sala: o rastro do LL(1) e do SLR(1)
+# cabe em uma tela. Mostra precedência (* antes de +).
+principal {
+    x = a + b * c;
+}

@@ -1,0 +1,12 @@
+# Atribuição e chamada começam ambas com ID: o LL(1) só funciona porque a
+# gramática foi fatorada (cmd_id -> ID resto_id).
+funcao soma(a: inteiro, b: inteiro) -> inteiro {
+    retorne a + b;
+}
+
+principal {
+    seja r: inteiro;
+    r = soma(1, 2);
+    soma(r, 3);
+    mostre(soma(r, soma(1, 1)) * 2);
+}

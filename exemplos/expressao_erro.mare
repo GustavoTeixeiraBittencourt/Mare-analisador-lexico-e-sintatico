@@ -1,0 +1,4 @@
+# Mesmo exemplo curto, mas com UM erro sintático: falta o operando depois de '+'.
+principal {
+    x = a + * c;
+}
