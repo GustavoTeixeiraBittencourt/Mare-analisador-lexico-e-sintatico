@@ -80,13 +80,18 @@ Python, sem geradores automáticos, a partir de uma expressão regular mestre
 com grupos nomeados. O analisador sintático é descendente recursivo, constrói
 uma árvore sintática abstrata e recupera-se de erros em modo pânico. Um
 programa de demonstração com 60 linhas é convertido em uma cadeia de 288 tokens
-e aceito pelo analisador sintático, e 28 testes automatizados validam
-precedência, associatividade e o diagnóstico de erros.
+e aceito pelo analisador sintático. Em uma segunda etapa, a gramática foi
+transformada em BNF no formato LL(1) (eliminação de ambiguidade, de recursão
+à esquerda e fatoração) e foram implementados, sem bibliotecas de parsing, um
+analisador LL(1) com tabela e pilha e um analisador SLR(1) com itens LR(0),
+tabela \texttt{ACTION}/\texttt{GOTO} e algoritmo shift/reduce, ambos sem
+conflitos, além de um gerador automático de gramática LL(1). Os três parsers
+concordam em 108 testes automatizados.
 \end{abstract}
 
 \begin{IEEEkeywords}
 compiladores, análise léxica, análise sintática, expressões regulares,
-gramática livre de contexto, parser descendente recursivo.
+gramática livre de contexto, parser descendente recursivo, LL(1), SLR(1), \textsc{First} e \textsc{Follow}.
 \end{IEEEkeywords}
 
 % ======================================================================
@@ -111,13 +116,16 @@ tokens que ``sobe'' do código-fonte até a árvore sintática.
 As contribuições deste artigo são: (i) a especificação léxica e sintática da
 Maré; (ii) um analisador léxico baseado em expressões regulares com detecção
 de erros; (iii) um analisador sintático descendente recursivo com construção
-de árvore sintática abstrata (AST) e recuperação de erros; e (iv) a validação
-da implementação por meio de programas de exemplo e testes automatizados.
+de árvore sintática abstrata (AST) e recuperação de erros; (iv) a transformação da gramática para o formato LL(1) e dois analisadores
+sintáticos guiados por tabela, LL(1) com pilha e SLR(1), com \textsc{First}/\textsc{Follow},
+itens LR(0) e detecção de conflitos; (v) um gerador automático de gramática
+LL(1) a partir de uma gramática ambígua de expressões; e (vi) a validação da
+implementação por meio de programas de exemplo e testes automatizados.
 
 O restante do texto está organizado da seguinte forma: a Seção~\ref{sec:fund}
 revisa os conceitos utilizados; a Seção~\ref{sec:lingua} apresenta a
 linguagem; as Seções~\ref{sec:lex} e~\ref{sec:sint} detalham os analisadores;
-a Seção~\ref{sec:result} discute os resultados; e a Seção~\ref{sec:concl}
+a Seção~\ref{sec:tabela} apresenta os analisadores LL(1) e SLR(1) e o gerador de gramática; a Seção~\ref{sec:result} discute os resultados; e a Seção~\ref{sec:concl}
 conclui o trabalho.
 
 % ======================================================================
@@ -157,6 +165,17 @@ gramática deve ser LL($k$): sem recursão à esquerda e com conjuntos
 dispensa ferramentas geradoras, produz código legível e facilita mensagens de
 erro específicas, razões pelas quais é adotada por compiladores de produção e
 recomendada em contextos didáticos~\cite{nystrom2021}.
+
+\subsection{Análise LL(1) com tabela e análise LR}
+Uma alternativa à recursão é o analisador LL(1) \emph{dirigido por tabela}: uma
+pilha explícita e uma tabela $M[A,a]$, construída a partir dos conjuntos
+\textsc{First} e \textsc{Follow}, indicam qual produção expandir. A gramática é
+LL(1) exatamente quando nenhuma célula recebe mais de uma produção~\cite{aho2006}.
+Já os analisadores LR constroem a árvore de baixo para cima: um autômato de
+itens LR(0) e as ações \emph{shift} e \emph{reduce} decidem o que fazer a cada
+token. No SLR(1), uma redução $A\to\alpha$ só é permitida para terminais em
+$\textsc{Follow}(A)$~\cite{aho2006,grune2008}. Gramáticas recursivas à esquerda,
+que o LL não aceita, são naturais no LR.
 
 % ======================================================================
 \section{A Linguagem Maré}\label{sec:lingua}
@@ -610,6 +629,219 @@ engano. Com isso, vários erros são relatados em uma única execução, sem
 cascatas de mensagens falsas.
 
 % ======================================================================
+\section{Analisadores Sintáticos Guiados por Tabela}\label{sec:tabela}
+
+Além do parser descendente recursivo, foram implementados, também sem
+bibliotecas de análise sintática, um analisador \textbf{LL(1) com pilha} e um
+analisador \textbf{SLR(1)}. Ambos consomem a mesma cadeia de tokens do
+analisador léxico: o token \texttt{EOF} vira o marcador de fim de entrada
+\texttt{\$}, e os nomes do enum \texttt{TipoToken} (\texttt{ID},
+\texttt{ABRE\_PAR}, \dots) são os terminais das gramáticas. As gramáticas ficam em
+arquivos de texto (\texttt{gramaticas/mare\_ll1.txt} e
+\texttt{gramaticas/mare\_slr.txt}, formato \texttt{A -> B c | eps}) e
+\emph{nenhum} conjunto (\textsc{First}, \textsc{Follow}, estados, tabelas) é
+escrito à mão: tudo é calculado por \texttt{first\_follow.py},
+\texttt{ll1.py}, \texttt{lr0.py} e \texttt{slr.py}.
+
+\subsection{Transformação da gramática para LL(1)}\label{sec:ll1gram}
+A EBNF da Seção~\ref{sec:sint} é transformada em BNF pura, nesta ordem:
+
+\paragraph{(a) Gramática ambígua.} Com uma única regra
+\texttt{expr -> expr + expr | expr * expr | \dots | id}, a sentença
+\texttt{a + b * c} tem duas árvores de derivação, $(a+b)\,{*}\,c$ e
+$a+(b\,{*}\,c)$, e \texttt{10 - 3 - 2} pode ser agrupada à esquerda ou à direita.
+
+\paragraph{(b) Precedência e associatividade.} Cria-se um não-terminal por nível
+(do menor ao maior): \texttt{ou}, \texttt{e}, \texttt{nao}, relacionais (não
+associativos), \texttt{+ -}, \texttt{* / \%}, menos unário e \texttt{\^{}}
+(associativo à direita). Os níveis associativos à esquerda ficam recursivos à
+esquerda, como \texttt{soma -> soma MAIS termo | soma MENOS termo | termo}.
+Essa é a gramática usada pelo SLR(1).
+
+\paragraph{(c) Recursão à esquerda.} Toda regra $A \to A\alpha \mid \beta$ vira
+$A \to \beta A'$, $A' \to \alpha A' \mid \varepsilon$. Por exemplo,
+\texttt{soma -> termo soma'} e
+\texttt{soma' -> MAIS termo soma' | MENOS termo soma' | eps}. A associatividade
+à esquerda continua garantida, pois o analisador monta a árvore ao percorrer
+\texttt{soma'} da esquerda para a direita.
+
+\paragraph{(d) Fatoração à esquerda.} Os pontos que o parser recursivo resolvia
+com \emph{dois} tokens de antecipação (\texttt{espiar}) não são LL(1) e foram
+fatorados:
+\begin{lstlisting}[style=ebnf,numbers=none]
+comando   -> cmd_id | ...
+cmd_id    -> ID resto_id
+resto_id  -> ATRIB expr PONTO_VIRGULA
+           | ABRE_PAR args_opt FECHA_PAR PONTO_VIRGULA
+primario  -> ID sufixo_id | ...
+sufixo_id -> ABRE_PAR args_opt FECHA_PAR | eps
+\end{lstlisting}
+O mesmo vale para o operando relacional (\texttt{rel\_opc}) e para a potência
+(\texttt{pot\_opc}), cujas alternativas começavam com o mesmo não-terminal.
+Concluída a transformação, a gramática tem \textbf{98 produções, 49 terminais e
+49 não-terminais}, sem \texttt{\{ \}} nem \texttt{[ ]}, com produções $\varepsilon$
+explícitas. O documento \texttt{docs/gramatica\_ll1.md} traz cada etapa.
+
+\subsection{\textsc{First} e \textsc{Follow}}\label{sec:firstfollow}
+Os conjuntos são calculados por ponto fixo iterativo: aplicam-se as regras
+abaixo em laço até que uma passada inteira não acrescente nenhum símbolo.
+\begin{itemize}
+\item $\textsc{First}(X_1\cdots X_n)$ recebe $\textsc{First}(X_1)\setminus\{\varepsilon\}$;
+se $\varepsilon\in\textsc{First}(X_1)$, continua com $X_2$, e assim por diante;
+$\varepsilon$ entra se todos os $X_i$ forem anuláveis (o código calcula
+\textsc{First} de \emph{cadeias}, não só de símbolos).
+\item Para $A\to\alpha B\beta$: $\textsc{Follow}(B)$ recebe
+$\textsc{First}(\beta)\setminus\{\varepsilon\}$ e, se $\beta\Rightarrow^*\varepsilon$,
+também $\textsc{Follow}(A)$; $\$\in\textsc{Follow}(S)$.
+\end{itemize}
+A Tabela~\ref{tab:ff} traz linhas reais geradas pelo programa
+(\texttt{python main.py -{}-first-follow}). O código foi conferido com a gramática
+$E,E',T,T',F$ do livro do Dragão~\cite{aho2006}, usada nos testes.
+
+\begin{table}[t]
+\centering
+\caption{\textsc{First} e \textsc{Follow} (trecho, gerado pelo programa).}\label{tab:ff}
+\scriptsize
+\begin{tabular}{@{}lll@{}}
+\toprule
+Não-terminal & \textsc{First} & \textsc{Follow} \\
+\midrule
+\texttt{soma'}      & \texttt{MAIS, MENOS, $\varepsilon$} & \texttt{OU, E, relacionais,} \\
+                    &                                     & \texttt{; , ) \{ ATE PASSO} \\
+\texttt{termo'}     & \texttt{MULT, DIV, MOD, $\varepsilon$} & \texttt{Follow(soma') + MAIS, MENOS} \\
+\texttt{pot\_opc}   & \texttt{POT, $\varepsilon$} & \texttt{Follow(termo') + MULT, DIV, MOD} \\
+\texttt{sufixo\_id} & \texttt{ABRE\_PAR, $\varepsilon$} & \texttt{Follow(primario)} \\
+\texttt{cmd\_id}    & \texttt{ID} & \texttt{início de comando, \}} \\
+\texttt{resto\_id}  & \texttt{ATRIB, ABRE\_PAR} & \texttt{início de comando, \}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Tabela LL(1) e análise com pilha}\label{sec:tabelall1}
+Para cada produção $A\to\alpha$, a tabela $M[A,a]$ recebe $A\to\alpha$ para
+todo $a\in\textsc{First}(\alpha)$ e, se $\varepsilon\in\textsc{First}(\alpha)$,
+também para todo $b\in\textsc{Follow}(A)$. Uma célula com mais de uma
+produção é um \textbf{conflito}; o programa os lista, e a gramática final
+resultou em \textbf{zero conflitos}: 300 das 2450 células estão
+preenchidas. Por exemplo, \texttt{soma' -> eps} vale para as 14 entradas de
+\textsc{Follow}(\texttt{soma'}), enquanto \texttt{soma' -> MAIS termo soma'}
+vale só para \texttt{MAIS}.
+
+O algoritmo preditivo usa uma pilha iniciada em \texttt{\$ programa}.
+Com terminal no topo, compara-se com o token atual (\emph{match}); com
+não-terminal, desempilha-se $A$ e empilha-se o lado direito de $M[A,a]$ de
+trás para frente; \texttt{\$} contra \texttt{\$} aceita. Em erro, registra-se
+linha e coluna e usa-se o modo pânico, descartando tokens até um elemento de
+$\textsc{Follow}(A)$. A Tabela~\ref{tab:rastroll1} mostra um trecho do rastro de
+\texttt{exemplos/expressao.mare} (\texttt{x = a + b * c;}), que tem 51 passos.
+
+\begin{table}[t]
+\centering
+\caption{Rastro LL(1) de \texttt{x = a + b * c;} (passos 12 a 24; pilha com o topo à direita, prefixo omitido).}\label{tab:rastroll1}
+\scriptsize
+\begin{tabular}{@{}rlll@{}}
+\toprule
+Passo & Pilha & Entrada & Ação \\
+\midrule
+12 & \texttt{\dots\ ; expr}                       & \texttt{ID MAIS ID MULT ID ;}  & \texttt{expr -> expr\_ou} \\
+13 & \texttt{\dots\ expr\_ou}                     & \texttt{ID MAIS ID MULT ID ;}  & \texttt{expr\_ou -> expr\_e expr\_ou'} \\
+\multicolumn{4}{c}{\dots\ (\texttt{expr\_e}, \texttt{expr\_nao}, \texttt{expr\_rel} descem até \texttt{soma})} \\
+17 & \texttt{\dots\ rel\_opc soma}                & \texttt{ID MAIS ID MULT ID ;}  & \texttt{soma -> termo soma'} \\
+\multicolumn{4}{c}{\dots\ (\texttt{termo}, \texttt{unario}, \texttt{potencia}, \texttt{primario})} \\
+22 & \texttt{\dots\ pot\_opc sufixo\_id ID}       & \texttt{ID MAIS ID MULT ID ;}  & match \texttt{ID} \\
+23 & \texttt{\dots\ pot\_opc sufixo\_id}          & \texttt{MAIS ID MULT ID ;}     & \texttt{sufixo\_id -> eps} \\
+24 & \texttt{\dots\ soma' termo' pot\_opc}        & \texttt{MAIS ID MULT ID ;}     & \texttt{pot\_opc -> eps} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Itens LR(0)}\label{sec:lr0}
+Um item LR(0) é uma produção com um ponto que marca o quanto já foi
+reconhecido (\texttt{soma -> soma . MAIS termo}). A operação
+\texttt{closure}$(I)$ acrescenta $B\to\bullet\gamma$ para todo item
+$A\to\alpha\bullet B\beta\in I$, até estabilizar; $\texttt{goto}(I,X)$ avança o
+ponto sobre $X$ e aplica \texttt{closure}. A coleção canônica parte de
+$I_0=\texttt{closure}(\{S'\to\bullet S\})$ e é expandida por \texttt{goto} com
+todo símbolo até não surgirem estados novos. A gramática SLR é a da etapa (b),
+\emph{aumentada} com a produção 0, \texttt{programa' -> programa}
+(85 produções, 49 terminais, 36 não-terminais); o autômato tem
+\textbf{160 estados e 582 transições}. Para a gramática do Dragão, a
+mesma implementação gera os 12 estados esperados (verificado em teste).
+A Listagem~\ref{lst:itens} mostra $I_0$ e $I_{61}$ reais.
+
+\begin{lstlisting}[style=ebnf,caption={Estados $I_0$ e $I_{61}$ (\texttt{-{}-itens-lr0}).},label=lst:itens]
+I0:  programa' -> . programa
+     programa  -> . itens PRINCIPAL bloco
+     itens     -> . itens item
+     itens     -> .                 (eps)
+I61: expr_rel -> soma . op_rel soma
+     expr_rel -> soma .
+     soma     -> soma . MAIS termo
+     soma     -> soma . MENOS termo
+\end{lstlisting}
+
+\subsection{Tabela SLR(1) e algoritmo shift/reduce}\label{sec:slr}
+A tabela é derivada dos itens: um item $A\to\alpha\bullet a\beta$ com
+$\texttt{goto}(I_i,a)=I_j$ gera $\texttt{ACTION}[i,a]=\texttt{s}\,j$; um item
+completo $A\to\alpha\bullet$ gera $\texttt{r}\,n$ \emph{apenas para os terminais
+de} $\textsc{Follow}(A)$ (é isso que distingue o SLR(1) do LR(0)); o item
+$S'\to S\bullet$ gera \texttt{acc} em \texttt{\$}; e as transições por
+não-terminais formam \texttt{GOTO}. O estado $I_{61}$ acima ilustra a decisão:
+reduzir \texttt{expr\_rel -> soma} só vale para
+$\textsc{Follow}(\texttt{expr\_rel})=\{\texttt{OU, E, ), ;, VIRGULA, \{, ATE, PASSO}\}$, e deslocar vale para
+os operadores relacionais, \texttt{MAIS} e \texttt{MENOS}: conjuntos
+disjuntos, logo sem conflito. O programa detecta conflitos
+\emph{shift/reduce} e \emph{reduce/reduce} (cobertos em teste com
+\texttt{E -> E MAIS E | id}, que é ambígua) e, para a Maré, a tabela
+(1201 células em \texttt{ACTION}, 254 em \texttt{GOTO}) resultou em
+\textbf{zero conflitos}.
+
+O laço shift/reduce mantém uma pilha de estados e símbolos. Em
+\texttt{shift} $j$ empilha o token e $j$; em \texttt{reduce} $A\to\beta$
+desempilha $2|\beta|$ itens e empilha $A$ e $\texttt{GOTO}[t,A]$, sendo $t$ o
+novo topo; \texttt{acc} termina. A Tabela~\ref{tab:rastroslr} traz o trecho
+de \texttt{x = a + b * c;}, que tem 38 passos: com \texttt{termo} no topo e
+\texttt{MULT} na entrada (passo~19), a tabela manda deslocar, e é por isso que
+o produto é reduzido antes da soma (passos 24 e 25).
+
+\begin{table}[t]
+\centering
+\caption{Rastro SLR(1) de \texttt{x = a + b * c;} (passos 13 a 25, resumido).}\label{tab:rastroslr}
+\scriptsize
+\begin{tabular}{@{}rlll@{}}
+\toprule
+Passo & Pilha (topo) & Entrada & Ação \\
+\midrule
+13 & \texttt{\dots\ ATRIB 51 soma 61}              & \texttt{MAIS ID MULT ID ;} & shift 103 \\
+14 & \texttt{\dots\ soma 61 MAIS 103}              & \texttt{ID MULT ID ;}      & shift 67 \\
+15--18 & \texttt{\dots\ MAIS 103 ID 67}             &\texttt{MULT ID ;}         & reduce \texttt{ID}$\to$\dots\ $\to$\texttt{termo} \\
+19 & \texttt{\dots\ MAIS 103 termo 130}            & \texttt{MULT ID ;}         & shift 105 \\
+20 & \texttt{\dots\ termo 130 MULT 105}            & \texttt{ID ;}              & shift 67 \\
+21--23 & \texttt{\dots\ MULT 105 ID 67}            &\texttt{;}                 & reduce \texttt{ID}$\to$\dots\ $\to$\texttt{unario} \\
+24 & \texttt{\dots\ termo 130 MULT 105 unario 132} & \texttt{;}                 & reduce 64: \texttt{termo -> termo MULT unario} \\
+25 & \texttt{\dots\ soma 61 MAIS 103 termo 130}    & \texttt{;}                 & reduce 61: \texttt{soma -> soma MAIS termo} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Gerador automático de gramática LL(1)}\label{sec:conversor}
+O módulo \texttt{conversor.py} automatiza as transformações da
+Seção~\ref{sec:ll1gram}. A entrada é uma gramática ambígua de expressões
+mais a precedência dos operadores, em ordem crescente, como no yacc
+(\texttt{\%left ou}, \texttt{\%left e}, \texttt{\%prefix nao},
+\texttt{\%nonassoc == < >}, \texttt{\%left + -}, \texttt{\%right \^{}}, \dots). O
+programa mostra cada etapa: (1) um não-terminal por nível de precedência;
+(2) eliminação da recursão à esquerda, direta e indireta (algoritmo clássico,
+com a substituição de $A_j$ em $A_i$ feita só quando $A_j$ leva de volta a $A_i$);
+(3) fatoração à esquerda repetida até não restar prefixo comum; e
+(4) \textsc{First}/\textsc{Follow}, tabela e contagem de conflitos. Para
+\texttt{gramaticas/ambigua\_expr.txt} (8 níveis de precedência, chamada de
+função \texttt{id ( A )}), a saída tem 38 produções e \textbf{zero conflitos}: a
+fatoração isolou \texttt{E8 -> id E8'} e \texttt{E7 -> E8 E7'}, entre outros
+casos. Ambiguidades que não vêm de operadores (o ``senão pendurado'') não são
+resolvidas, e o programa reporta os conflitos que sobram.
+
+% ======================================================================
 \section{Resultados}\label{sec:result}
 
 A implementação tem cerca de 1.150 linhas de Python, distribuídas em seis
@@ -683,11 +915,60 @@ chaves balanceadas, e o \texttt{\}} da linha~7 fecha corretamente o bloco
 cascata.
 
 \subsection{Testes automatizados}
-Por fim, 28 testes automatizados (\texttt{unittest}) cobrem a distinção entre
+Na primeira etapa, 28 testes automatizados (\texttt{unittest}) cobriam a distinção entre
 palavras reservadas e identificadores, a prioridade entre as expressões
 regulares, a contagem de linhas e colunas, a precedência e a associatividade
 dos operadores, todos os comandos da linguagem, as mensagens de erro e o
-número de erros relatados após a recuperação. Todos os testes passam.
+número de erros relatados após a recuperação. Todos continuam passando.
+
+\subsection{Resultados dos analisadores de tabela e comparação LL(1) $\times$ SLR(1)}
+Os três parsers (recursivo, LL(1) e SLR(1)) foram comparados em mais de 60
+trechos de programa e em todos os arquivos de \texttt{exemplos/}, e
+\emph{concordam} sobre quais programas são aceitos e quais têm erro sintático.
+Nos casos com um único erro (\texttt{rejeitado.mare}, \texttt{expressao\_erro.mare}),
+os três apontam a mesma linha e coluna. Para isso foi preciso corrigir uma
+divergência do parser recursivo original, que aceitava funções \emph{depois}
+do bloco \texttt{principal}, contra a gramática. A Tabela~\ref{tab:comparacao}
+resume os números.
+
+\begin{table}[t]
+\centering
+\caption{Comparação entre os dois analisadores de tabela.}\label{tab:comparacao}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & LL(1) & SLR(1) \\
+\midrule
+Gramática usada & fatorada, sem rec. à esq. & recursiva à esq., aumentada \\
+Produções & 98 & 85 \\
+Terminais / não-terminais & 49 / 49 & 49 / 36 \\
+Estruturas da tabela & $M[A,a]$: 300 células & \texttt{ACTION}: 1201; \texttt{GOTO}: 254 \\
+Estados do autômato & --- & 160 \\
+Conflitos & 0 & 0 \\
+Passos em \texttt{x = a + b * c;} & 51 & 38 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+O LL(1) exigiu mais transformações da gramática (recursão à esquerda e
+fatoração) e por isso tem mais produções, além de passos de expansão
+\emph{preditiva} (como \texttt{expr -> expr\_ou}) que antecipam a escolha antes
+de ler o que a produção gera. O SLR(1) aceita a gramática natural e decide
+\emph{depois} de reconhecer o lado direito, com menos passos; em troca, seu
+autômato é grande (160 estados) e a tabela é mais difícil de ler à mão. Em ambos,
+a tabela é construída automaticamente, e a ausência de conflitos prova que a
+gramática pertence à classe do analisador.
+
+\subsection{Testes automatizados (parsers de tabela)}
+A suíte passou de 28 para 108 testes (\texttt{python -m unittest discover -s tests -v}).
+Os novos testes cobrem: \textsc{First}/\textsc{Follow} da gramática do Dragão;
+tabela LL(1) sem conflitos na Maré e com conflitos detectados em gramáticas
+ambíguas ou com prefixo comum; os 12 estados LR(0) da gramática $E,T,F$ e a
+tabela SLR(1) sem conflitos, com \emph{shift/reduce} e \emph{reduce/reduce}
+detectados nos casos ruins; os rastros dos dois algoritmos; a concordância
+entre os três parsers; a interface de linha de comando; e o conversor
+(etapas intermediárias exatas, recursão indireta, fatoração repetida e a
+gramática gerada reconhecendo expressões com a precedência correta).
 
 % ======================================================================
 \section{Conclusão}\label{sec:concl}
@@ -700,6 +981,14 @@ parser descendente recursivo curto e legível, em que a precedência dos
 operadores é consequência direta da estrutura das regras. A opção por uma
 implementação sem geradores exigiu mais código, mas deu à equipe controle
 total sobre as mensagens de erro e sobre a recuperação em modo pânico.
+
+Na segunda etapa, transformar a gramática em LL(1) mostrou que a
+precedência e a associatividade, que no parser recursivo vinham da hierarquia
+das funções, passam a viver na própria gramática, e que os pontos de
+antecipação de dois tokens (atribuição \emph{versus} chamada) precisam ser
+fatorados. O SLR(1) dispensou essas transformações, ao custo de um autômato de
+160 estados. Em ambos os casos, calcular \textsc{First}, \textsc{Follow} e as
+tabelas por programa, e não à mão, tornou a ausência de conflitos verificável.
 
 Nas próximas etapas, a AST será a entrada da análise semântica, com tabela de
 símbolos, verificação de escopo e checagem de tipos (por exemplo, rejeitar
