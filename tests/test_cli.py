@@ -48,6 +48,23 @@ class TestCLI(unittest.TestCase):
                 self.assertEqual(r.returncode, 0, r.stderr)
                 self.assertIn(trecho, pathlib.Path(caminho).read_text(encoding="utf-8"))
 
+    def test_converter_mostra_etapas_e_grava_gramatica_gerada(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            destino = str(pathlib.Path(pasta) / "ll1.txt")
+            r = rodar("--converter", "gramaticas/ambigua_expr.txt", "--saida", destino)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            for etapa in ("ETAPA 1", "ETAPA 2", "ETAPA 3", "ETAPA 4", "ZERO conflitos"):
+                self.assertIn(etapa, r.stdout)
+            self.assertIn("E → E1 E'", pathlib.Path(destino).read_text(encoding="utf-8").replace("->", "→"))
+
+    def test_converter_gramatica_invalida_da_erro(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            ruim = pathlib.Path(pasta) / "ruim.txt"
+            ruim.write_text("%left +
+E -> E + E | E * E | id
+", encoding="utf-8")
+            self.assertEqual(rodar("--converter", str(ruim)).returncode, 2)
+
     def test_sem_argumentos_pede_arquivo(self):
         self.assertEqual(rodar().returncode, 2)
 
