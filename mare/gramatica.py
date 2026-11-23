@@ -28,7 +28,7 @@ from dataclasses import dataclass
 
 EPSILON = "ε"       # cadeia vazia
 FIM = "$"           # marcador de fim de entrada
-_SINONIMOS_EPSILON = {EPSILON, "epsilon", "EPSILON", "&"}
+_SINONIMOS_EPSILON = {EPSILON, "epsilon", "EPSILON"}
 
 
 class ErroGramatica(Exception):

@@ -1,0 +1,27 @@
+# Gramática AMBÍGUA de expressões da Maré, para o conversor (python main.py --converter).
+#
+# Precedência e associatividade, em ordem CRESCENTE (a 1ª linha liga menos):
+#   %left     associativo à esquerda        %right    associativo à direita
+#   %nonassoc não associativo               %prefix   operador prefixo (unário)
+%left ou
+%left e
+%prefix nao
+%nonassoc == != < <= > >=
+%left + -
+%left * / %
+%prefix -
+%right ^
+
+# Uma única regra com todos os operadores misturados (por isso é ambígua).
+E -> E ou E | E e E | nao E
+   | E == E | E != E | E < E | E <= E | E > E | E >= E
+   | E + E | E - E
+   | E * E | E / E | E % E
+   | - E
+   | E ^ E
+   | ( E )
+   | id | num
+   | id ( A )
+
+# Argumentos de chamada (não é ambígua, mas tem prefixo comum: exercita a fatoração).
+A -> E , A | E
