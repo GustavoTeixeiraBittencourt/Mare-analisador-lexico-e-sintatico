@@ -1,0 +1,71 @@
+# Gramática da linguagem Maré em BNF pura, pronta para análise LL(1).
+#
+# Formato: "A -> alternativa1 | alternativa2"; símbolos separados por espaço;
+# "ε" é a cadeia vazia; "#" começa um comentário.
+# Terminais = nomes do enum TipoToken (ID, NUM_INT, ABRE_PAR, ...).
+# Não-terminais = nomes em minúsculas (os terminados em ' vieram da
+# eliminação da recursão à esquerda; os demais "auxiliares" da fatoração).
+# O símbolo inicial é o lado esquerdo da primeira produção.
+
+# ---------------------------------------------------------------- estrutura
+programa    -> itens PRINCIPAL bloco
+itens       -> item itens | ε
+item        -> funcao | declaracao
+funcao      -> FUNCAO ID ABRE_PAR params_opt FECHA_PAR retorno_opt bloco
+params_opt  -> params | ε
+params      -> param params'
+params'     -> VIRGULA param params' | ε
+param       -> ID DOIS_PONTOS tipo
+retorno_opt -> SETA tipo | ε
+tipo        -> T_INTEIRO | T_REAL | T_LOGICO | T_TEXTO
+bloco       -> ABRE_CHAVE comandos FECHA_CHAVE
+comandos    -> comando comandos | ε
+
+# ---------------------------------------------------------------- comandos
+comando     -> declaracao | cmd_id | se | enquanto | para | repita
+             | retorne | mostre | leia
+declaracao  -> SEJA ID DOIS_PONTOS tipo init_opt PONTO_VIRGULA
+             | FIXO ID DOIS_PONTOS tipo ATRIB expr PONTO_VIRGULA
+init_opt    -> ATRIB expr | ε
+# fatoração: atribuição e chamada começam ambas com ID
+cmd_id      -> ID resto_id
+resto_id    -> ATRIB expr PONTO_VIRGULA
+             | ABRE_PAR args_opt FECHA_PAR PONTO_VIRGULA
+se          -> SE ABRE_PAR expr FECHA_PAR bloco senao_opt
+senao_opt   -> SENAO senao_corpo | ε
+senao_corpo -> se | bloco
+enquanto    -> ENQUANTO ABRE_PAR expr FECHA_PAR bloco
+para        -> PARA ID DE expr ATE expr passo_opt bloco
+passo_opt   -> PASSO expr | ε
+repita      -> REPITA bloco ATE ABRE_PAR expr FECHA_PAR PONTO_VIRGULA
+retorne     -> RETORNE retorno_expr PONTO_VIRGULA
+retorno_expr -> expr | ε
+mostre      -> MOSTRE ABRE_PAR args FECHA_PAR PONTO_VIRGULA
+leia        -> LEIA ABRE_PAR ID FECHA_PAR PONTO_VIRGULA
+
+# ---------------------------------------------------------------- expressões
+# da MENOR para a MAIOR precedência: ou < e < nao < relacional < + - < * / % < - unário < ^
+expr        -> expr_ou
+expr_ou     -> expr_e expr_ou'
+expr_ou'    -> OU expr_e expr_ou' | ε
+expr_e      -> expr_nao expr_e'
+expr_e'     -> E expr_nao expr_e' | ε
+expr_nao    -> NAO expr_nao | expr_rel
+expr_rel    -> soma rel_opc
+rel_opc     -> op_rel soma | ε
+op_rel      -> IGUAL | DIFERENTE | MENOR | MENOR_IGUAL | MAIOR | MAIOR_IGUAL
+soma        -> termo soma'
+soma'       -> MAIS termo soma' | MENOS termo soma' | ε
+termo       -> unario termo'
+termo'      -> MULT unario termo' | DIV unario termo' | MOD unario termo' | ε
+unario      -> MENOS unario | potencia
+potencia    -> primario pot_opc
+pot_opc     -> POT unario | ε
+primario    -> NUM_INT | NUM_REAL | TEXTO | VERDADEIRO | FALSO
+             | ID sufixo_id
+             | ABRE_PAR expr FECHA_PAR
+# fatoração: variável e chamada começam ambas com ID
+sufixo_id   -> ABRE_PAR args_opt FECHA_PAR | ε
+args_opt    -> args | ε
+args        -> expr args'
+args'       -> VIRGULA expr args' | ε
